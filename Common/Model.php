@@ -23,6 +23,8 @@
 
 namespace Nuwani;
 
+use Nuwani\Common\stringHelper;
+
 if (!class_exists ('\PDO'))
 {
     /** PDO is not required by the bot's core. * */
@@ -76,6 +78,8 @@ class Model
      */
     private $_pPDO;
 
+    private $bypassInsert;
+
     /**
      * Sets the table where to select from based on the given id and id-column. Based on the last param it connects to
      * the database or not.
@@ -84,15 +88,19 @@ class Model
      * @param string $sIdColumn         Column to select from
      * @param string $sId               Id to the select in the specified column
      * @param bool   $connectToDatabase If it should connect to the database
+     * @param bool   $bypassInsert      Makes from the insert an update
      */
     //public function __construct ($sTable, $sIdColumn, $sId, $connectToDatabase = true)
-    public function __construct (string $sTable, string $sIdColumn, string $sId, bool $connectToDatabase = true)
+    public function __construct (string $sTable, string $sIdColumn, string $sId, bool $connectToDatabase = true, bool
+    $bypassInsert = false)
     {
         $this->_sTable = $sTable;
 
         $this->_sIdColumn = $sIdColumn;
 
         $this->_sId = $sId;
+
+        $this->bypassInsert = $bypassInsert;
 
         if ($connectToDatabase)
         {
@@ -153,13 +161,16 @@ class Model
     {
         foreach ($this->_aData as $sVarName => $sVarValue)
         {
-            if ($sVarName == $this->_sIdColumn)
+            if ($sVarName == $this->_sIdColumn && !$this->bypassInsert)
             {
                 $sQuery = "insert " . $this->_sTable . " (" . $sVarName . ")
                            select :sVarValue; ";
             }
             else
             {
+                if ($sVarName == stringHelper::Format("{0}_id", $this -> _sTable) || $sVarName == 'id')
+                    continue;
+
                 $sQuery = "update " . $this->_sTable . "
                            set " . $sVarName . " = :sVarValue
                            where " . $this->_sIdColumn . " like :sId;";
@@ -177,31 +188,13 @@ class Model
                 $oStmt -> bindParam (':sVarValue', $sVarValue);
                 if ($sVarName != $this->_sIdColumn)
                 {
-                    $oStmt->bindParam (':sId', $this->_sId);
+                    $oStmt->bindParam (':sId', $this -> _sId);
                 }
 
                 $oStmt -> execute();
 
                 if ($oStmt -> errorInfo()[0] == Model::DUPLICATE_ENTRY_FOR_KEY_PRIMARY)
                     continue;
-
-//                if ($oStmt -> execute () && $this -> _sId === NULL)
-//                {
-//                    echo 'isnull';
-//                    $this -> __construct ($this -> _sTable, $this -> _sIdColumn, $this -> _pPDO -> lastInsertId());
-//                }
-//                elseif ($oStmt -> execute ())
-//                {
-//                    echo 'execute';
-//                    // Can't return anything when in adding a record. Will then return true outside the foreach
-//                    // statement!
-//                }
-//                else
-//                {
-//                    echo 'else';
-//                    var_dump ($oStmt -> errorInfo());
-//                    return false;
-//                }
             }
             catch (\ PDOException $e)
             {
@@ -298,7 +291,8 @@ class Model
 
             foreach ($oStmt->fetchAll (\ PDO :: FETCH_ASSOC) as $aRow)
             {
-                $aModels[$i] = new Model ($this -> _sTable, $this -> _sIdColumn, $aRow [$this -> _sIdColumn], false);
+                $aModels[$i] = new Model ($this -> _sTable, $this -> _sIdColumn, $aRow [$this -> _sIdColumn], false,
+                    $this->bypassInsert);
                 foreach ($aRow as $sKey => $sValue)
                 {
                     $aModels[$i] -> $sKey = $sValue;

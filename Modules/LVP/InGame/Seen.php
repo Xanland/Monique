@@ -45,14 +45,15 @@ class Seen
     /**
      * Gets the data of the specified person from the database
      *
-     * @param string $fieldName Name of the field to search on
-     * @param string $value     Value of the field defined in $fieldName
+     * @param string $fieldName    Name of the field to search on
+     * @param string $value        Value of the field defined in $fieldName
+     * @param bool   $bypassInsert Makes from the insert an update
      *
      * @return mixed False or the object of the player
      */
-    public static function getPersonSeenData (string $fieldName, string $value)
+    public static function getPersonSeenData (string $fieldName, string $value, bool $bypassInsert = false)
     {
-        return new Model (self :: SEEN_TABLE, $fieldName, $value);
+        return new Model (self :: SEEN_TABLE, $fieldName, $value, true, $bypassInsert);
     }
 
     /**
@@ -110,10 +111,12 @@ class Seen
         $aPlayerInformation = $oApi -> getDetailedPlayers ();
         $aOnlinePlayers     = array();
 
+        $ii = 0;
         foreach ($aPlayerInformation as $aPlayer)
         {
-            $aOnlinePlayers['name'][] = $aPlayer['nickname'];
-            $aOnlinePlayers['id'][] = $aPlayer['playerid'];
+            $aOnlinePlayers['name'][$ii] = $aPlayer['nickname'];
+            $aOnlinePlayers['id'][$ii] = $aPlayer['playerid'];
+            $ii++;
         }
 
         $oSeenData = self :: getPersonSeenData('lvp_person_last_seen_id', '%');
@@ -206,7 +209,7 @@ class Seen
      */
     public static function resetOnlinePlayersAtGamemodeInit ()
     {
-        $onlinePlayers = self :: getPersonSeenData ('sReason', 'online');
+        $onlinePlayers = self :: getPersonSeenData ('sReason', 'online', true);
         foreach ($onlinePlayers -> getAll() as $onlinePlayer)
         {
             $onlinePlayer -> iId = -1;

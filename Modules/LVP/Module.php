@@ -50,7 +50,7 @@ class LVP extends \ModuleBase
      *
      * @var array
      */
-    private $m_aEchoBots = array ('Nuwani', 'Nowani', 'Nuweni', 'Nuwini', 'Nuwoni', 'Nuwuni', 'Xanland', 'LVP_Radio');
+    private $m_aEchoBots = array ('Nuwani', 'Nowani', 'Nuweni', 'Nuwini', 'Nuwoni', 'Nuwuni', 'Xanland');
 
     /**
      * The channel we need to scan for the merchant and last-seen-module.
@@ -89,39 +89,34 @@ class LVP extends \ModuleBase
     public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
         $sChannel = strtolower ($sChannel);
-        $sMessage = Util :: stripFormat ($sMessage);
+        $sMessage = Util::stripFormat ($sMessage);
 
-        if (in_array ($sNickname, $this -> m_aEchoBots))
+        if ($sChannel == self :: ECHO_CHANNEL)
         {
-            if ($sChannel == self :: ECHO_CHANNEL)
+            if (in_array ($sNickname, $this->m_aEchoBots))
             {
                 if ($sMessage == '*** Global Gamemode Initialization')
                 {
-                    Seen :: resetOnlinePlayersAtGamemodeInit ();
-                    Merchant :: resetInformation ();
+                    Seen:: resetOnlinePlayersAtGamemodeInit ();
+                    Merchant:: resetInformation ();
                 }
                 else
                 {
-                    Seen :: setPersonInformation ($sMessage);
-                    Merchant :: setInformation ($sMessage);
-                    QuoteDevice :: setInformation ($pBot, $sMessage);
-                    if ($sMessage == '!players')
-                    {
-                        Seen:: syncOnlinePlayers ();
-                    }
+                    Seen:: setPersonInformation ($sMessage);
+                    Merchant:: setInformation ($sMessage);
+                    QuoteDevice:: setInformation ($pBot, $sMessage);
                 }
             }
-            else if ($sChannel == self :: RADIO_CHANNEL)
+
+            if ($sMessage == '!players')
             {
-                Radio :: setNowPlayingInformation ($sMessage);
+                Seen:: syncOnlinePlayers ();
             }
-            else if ($sChannel == self :: LOGGING_CHANNEL)
-            {
-                if ($sMessage == '!lvp-reset')
-                {
-                    Seen:: syncOnlinePlayers ();
-                }
-            }
+        }
+
+        if ($sChannel == self :: RADIO_CHANNEL && $sNickname == 'LVP_Radio')
+        {
+            Radio :: setNowPlayingInformation ($sMessage);
         }
     }
 
