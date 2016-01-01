@@ -1,0 +1,159 @@
+----------------------------------------------------------------------------------------------------
+NUWANI 3.0 - NO DATE SET - Peter Beverloo, MrBondt and Wesley
+
+Nuwani 3.0 features a whole new logging-, authorization and dependency model. The exact features and
+possibilities of this new major are yet undetermined.
+
+- Branched Nuwani 2.3 for stable development, trunk now contains version 3.0 (Peter).
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.1 - NO DATE SET - Peter Beverloo, Jorijn, Wesley and MrBondt
+
+The 2.1 release will mostly iron out any bugs which made it to the final release, and next to
+that, add some (large) new features. Most importantly, Nuwani now allows you to have secured
+connections to the IRC Servers, re-enabled signal handling for linux and supports PHP 6.
+
+- Added an extra check for null in the socket-write method, which gave errors (Peter).
+- Added a version check in the run.php file, to inform people who are not running PHP 5.3 (MrBondt).
+- The onDisconnect callback now gets distributed after disconnecting the socket (Peter).
+- The @ ("silent-error")-operator works again, which needed a check in the error-handler (Peter).
+- Fixed directory-modules, which wouldn't load, and added the !modulelist command (Peter).
+- Signal catching implemented for Linux systems, now features proper, clean shutdowns (Peter).
+- Added the ability for secured connections to an IRC Server utilizing OpenSSL and streams (Peter).
+- Improved the PHP version check in run.php, so people running PHP6 can use Nuwani too (Peter).
+- Split up internal commands and personal commands, to ease up the updating cycle (Peter, MrBondt).
+- Split up the Command module in a directory, so the Command class can have its own file (Peter).
+- Fixed a number of warnings when a module could not be properly loaded (Peter).
+- Added the Countable interface to BotGroup, to allow usage of count() on the class (Peter).
+- Recreated all the required commands and added !restart, full list can be found below (Peter).
+- A PROTOCTL command will now be send to indicate that we can receive advanced /names (Peter).
+- Added a simple database class which extends MySQLi, but includes singleton (Peter).
+
+The following internal commands have been added to the Command module for Nuwani 2.1:
+
+!cmdadd        !cmdremove   !cmdrename   !cmdchannel   !cmdnetwork
+!cmdcode       !cmdlist     !cmdlevel    !moduleload   !moduleunload
+!modulereload  !modulelist  !botlist     !meminfo      !restart
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.0 FINAL - FEBRUARY 2nd, 2009 - Peter Beverloo, Jorijn, Wesley and MrBondt
+
+This third Release Candidate will most likely be the last one prior to the Final release of Nuwani
+2.0, a release Wesley will be helping us with. It will contain mainly bugfixes and a few
+minor enhancements, to make the platform as flexible, efficient and fast as possible.
+Issues and request are still welcome however!
+
+- Added the possibility for modules to be directories, allowing cleaner architecture for larger ones (Peter).
+- Moved the onRawSend callback; commands are now distributed prior to calling onRawSend (Peter).
+- Implemented a number of colour- and formatting defines in the module base (Peter).
+- Included a CTCP helper module, replying on the most common and required CTCP commands (Peter).
+- Fixed handling of single-worded CTCP commands in the bot message analyser (Peter).
+- Fixed slave- and master selection with the bot manager, due to an excess equal-mark (Jorijn).
+- Fixed Socket::process () throwing an error with every loop if the connection has died (Peter).
+- Added the nickname-prefix option for commands (e.g. Nuwani: !output), for multiple master bots (Wesley).
+- Optimalised various bits of code for better performance and overall efficiency (Peter).
+- Added various error checks for non-existing commands in the Command module, which could cause warnings (Peter).
+- Disabled the Module::onRawSend callback by default, which can be enabled by a second parameter (Peter).
+- Updated the commands which are included by default: !cmdadd, !cmddel, !cmdrename, !cmdlevel, !cmdchannel, !cmdnetwork (Peter).
+- Added a callback for INVITE IRC-commands, also included an Invite module for auto-join (Peter).
+- Added a method to get all bots in the bot-manager (BotManager :: getBotList ()) (Peter).
+- Added some extra checks to the BotGroup's offsetGet and -Exists methods (Peter).
+- Removed the call to Module :: shutDown (), seeing PHP supports this thing called destructors (Peter).
+- Added various module commands: !moduleload, !moduleunload, !moduleunload (Peter).
+- Removed runkit support for the time being, due to it being highly unstable with PHP 5.3 beta1 (Peter).
+- Made the sleep-timer configurable to select various performance profiles for the bot (Peter).
+- Exception handling has been fixed, and now works properly. The exception is also shown on IRC (Peter).
+- Added the possibility to get the network-name from a bot using the Array-syntax (Peter).
+- Some grammatical fixes in exceptions and comment, nothing major though (Peter).
+- Fixed a bug in Bot :: setBotInfo (), with overwriting the network information collected (Peter).
+- Added tracking of supported features of an IRC Network, testable using the new command !supports (Peter).
+
+Release Candidate 3 should be the release package. From now on, only critical bugs will be fixed,
+meaning a final 2.0 release is just a few days away.
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.0 Release Candidate 2 - JANUARY 23rd, 2009 - Peter Beverloo, MrBondt
+
+The second Release Candidate contains, sadly, some new features (strictly it should be enhancements
+only). Next to that, a whole list of bugs has been fixed. MrBondt and Jorijn have joined the
+development team, and Wesley has contributed some code for the NetworkManager::add method.
+
+- Fixed issue #2 with the Bot-Manager's network selection procedure.
+- Added NetworkManager::add(), as provided by Wesley in issue #7.
+- Added BotManager::create to create a new bot, and an alias to unregister (::destroy).
+- The commands module now supports various actions using ArrayAccess.
+- Bots may now be bound to a certain IP address and/or port.
+- Some minor changes which will improve Slave usage- and handling.
+- Fixed issue #10 with the module-callback stopping after the Evaluation module.
+- Removed the onDisconnect callback from the Connection-module, as it served no purpose.
+- Fixed the call to onModuleLoad in the module unload function, now points to onModuleUnload.
+- Improved the Timer class with various functions to list and modify timers.
+- Added an extra check to the loadModule method, to ensure we're actually loading a module.
+- Added an extra check to creating a timer, squashing out yet another possible crash.
+- Added a onRawSend callback for non-slave bots which distribute data or messages.
+- The Commands module now supports binding a command to a certain channel.
+- Re-compiled the included runkit.so file to the new Zend-API number (2009-01-15 - update your PHP!)
+- Included a proper error- and exception handling, purely because it was lacking.
+
+Small note for those who will be using this version: a bug (I think?) occurs right after
+an exception gets caught, all output stops, but processing continues. Google isn't all that
+familiar with this problem, so if anyone has any idea, please drop a note. Have fun!
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.0 Release Candidate 1 - JANUARY 1ST, 2009 - PETER BEVERLOO
+
+The first beta contains mainly bug- and performance fixes, next to a minor amount
+of (smaller) new features. This might be the second last release before the final,
+considering there isn't a lot more planned than beta 2 and beta 3.
+
+- Fixed an invalid parameter bug in the module-prioritization procedure (thanks MrBondt).
+- Removed AutoJoin, AutoCommands and QuitMessages from the Bot-core and rewrote them as a module.
+- Removed individual parameters, some functions and other things from the Bot-core.
+- Updated the ArrayAccess implementation in the Bot-core to include general bot settings.
+- Added new module callbacks: onConnect and onDisconnect
+- Modules may now return the FINISHED constant, which will stop the callback-loop.
+- Removed the "example" module from the package, check the documentation yourself.
+- Added various connect-helpers to the Connection module, to handle and fix common problems.
+- Nuwani v2.0 is now able to re-connect after being KILL'ed from the server.
+- Fixed a potential crash in the Command and Evaluation module when destroying bots.
+- Fixed a few minor bugs with the Command module, a wrongly named parameter and its contents.
+- Wrote a small Output module which outputs a log to the console.
+
+A special note goes to MrBondt, who reported a bug that wasn't a bug anymore, cheers.
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.0 Beta 3 - JANUARY 1ST, 2009 - PETER BEVERLOO
+
+The third release of Nuwani 2.0, being Release Candidate 3, will most likely
+be the last RC before going to a semi-public beta version. This version mainly
+includes competability- and bug fixes, next to the security-provider and module
+prioritatization. There is a minor loss in performance here though, which will
+be solved properly during the beta 1 release.
+
+- Checks whether the runkit module can be used - it's not required anymore.
+- Now checks whether a module can be loaded, e.g. the class is available.
+- The Module Manager can now properly be used with foreach- and for language constructs.
+- Implemented a priority-queue system for modules, based on the configuration (thanks MrBondt).
+- Slightly modified implementation of the Memory Manager, still highly expirimental though.
+- Implemented an extensive Security Provider system, to be completed for the first beta.
+- Created the Commands module, which allows you to create commands like !test
+- Fixed a major security flaw with bot-owner verification, it didn't properly check nicks/users/hosts.
+- New module callbacks: onModuleLoad, onModuleUnload, onTick and onRaw
+
+----------------------------------------------------------------------------------------------------
+NUWANI 2.0 Beta 2 - DECEMBER 28TH, 2008 - PETER BEVERLOO
+
+This is the second release of the Nuwani 2.0 platform, formally known as RC2.
+It includes various new features and enhancements compared from the previous
+Release Candidate, and can nearly be considered stable enough to be used in
+production environments. Compared to RC1, the following changes have been made.
+
+- Changed NL to PHP_EOL in the Socket class for Windows competability (thanks MrBondt).
+- Implemented buffering of the last socket-message to conqueror incompletes (thanks MrBondt).
+- Fixed a bug with the evaluation-handler's system-command execution.
+- Fixed the line-count for buffered executions in the evaluation-handler (thanks Dennis).
+- Fixed automatic-login for the evaluation-handler based on the configuration.
+- Implemented an advanced BotGroup featuring method- and property forwarding and an iterator.
+- Added "In" to the Bot ArrayAccess-keys, despite it being slower than direct access.
+- Added roles for bots, e.g. "master" (active) and "slave" (passive, doesn't handle messages).
+- Implemented channel-tracking in the bot's class, also used for bot-matching.
