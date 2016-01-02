@@ -108,9 +108,10 @@ class Radio
              // self :: $_m_aRadioFileContent ['listeners'] = $aRadioInformation [3];
             }
         }
-        else if (preg_match ('/You are listening to L V P Radio\. Up next is (.+)/', $sPlayingInfo, $aRadioInformation)
-              || preg_match ('/The next song is (.+)/', $sPlayingInfo, $aRadioInformation)
-              || preg_match ('/This is your beloved L V P Auto Dee Jay, the bot with Style\. Coming up next: (.+)/', $sPlayingInfo, $aRadioInformation))
+        else if (preg_match ('/You are listening to L V P Radio\. Up next: (.+)/', $sPlayingInfo, $aRadioInformation)
+              || preg_match ('/The next song is: (.+)/', $sPlayingInfo, $aRadioInformation)
+              || preg_match ('/This is your beloved L V P Auto Dee Jay, the bot with Style\. Our next song is: (.+)/',
+                                 $sPlayingInfo, $aRadioInformation))
         {
             if (isset ($aRadioInformation [1]))// && isset ($aRadioInformation [3]))
             {
