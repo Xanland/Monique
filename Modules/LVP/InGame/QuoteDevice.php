@@ -28,17 +28,19 @@
  */
 
 namespace LVP\InGame;
+use Commands;
 use Nuwani\Bot;
 use Nuwani\Common\stringHelper;
+use Nuwani\Timer;
 
 class QuoteDevice
 {
     /**
-     * The file put to that file which containts the LVP QuoteDevice data.
+     * The file put to that file which contains the LVP QuoteDevice data.
      *
      * @var string
      */
-    private static $m_sQuoteDeviceFile = 'Data/Logs/#lvp.echo.log';
+    public static $m_sMqdFileName = 'Data/LVP/MQD.dat';
 
     /**
      * Array containing the unserialized data taken from the file defined
@@ -56,9 +58,11 @@ class QuoteDevice
     {
         self :: $m_aQuoteDeviceFileContent = array ();
 
-        if (file_exists (self :: $m_sQuoteDeviceFile))
+        $sPathToLogFile = stringHelper :: Format ('Data/Logs/{0}-{1}-{2}-#lvp.echo.log', date ('Y'), date ('m'), date ('d'));
+
+        if (file_exists ($sPathToLogFile))
         {
-            self :: $m_aQuoteDeviceFileContent = file (self :: $m_sQuoteDeviceFile);
+            self :: $m_aQuoteDeviceFileContent = file ($sPathToLogFile);
         }
 
         return self :: $m_aQuoteDeviceFileContent;
@@ -83,13 +87,11 @@ class QuoteDevice
         {
             if (strstr ($aParameters [1], ':') !== false)
             {
-                //file_put_contents ('Data/Logs/#lvp.echo.log', '[' . date('H:i:s') . '] <' . str_replace (':', '', $aParameters [1]) . '> ' . $sNewMessage . PHP_EOL, FILE_APPEND);
                 file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
                     trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
             }
             elseif (strstr ($aParameters [1], ':') === false && strstr ($aParameters [1], '***') === false)
-            {//06
-                //file_put_contents ('Data/Logs/#lvp.echo.log', '[' . date('H:i:s') . '] * ' . str_replace (':', '', $aParameters [1]) . ' ' . $sNewMessage . PHP_EOL, FILE_APPEND);
+            {
                 file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] * {1} {2}' . PHP_EOL, date('H:i:s'),
                     trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
             }
@@ -103,12 +105,11 @@ class QuoteDevice
         {
             unset ($aNewParameters [2], $aNewParameters [3]);
             $sNewMessage = implode(' ', $aNewParameters);
-            //file_put_contents ('Data/Logs/#lvp.echo.log', '[' . date('H:i:s') . '] <' . str_replace (':', '', $aParameters [1]) . '> ' . $sNewMessage . PHP_EOL, FILE_APPEND);
             file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
                 trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
         }
 
-        if (strstr ($sMessage, 'Monique') && !strstr ($sMessage, 'Monique:') && file_get_contents ('Data/LVP/MQD.dat') != '')
+        if (strstr ($sMessage, 'Monique') && !strstr ($sMessage, 'Monique:') && file_get_contents (self :: $m_sMqdFileName) != '')
         {
             self :: sendRandomMessage ($pBot);
         }
@@ -124,5 +125,43 @@ class QuoteDevice
         $sMessage         = str_ireplace ('Monique', str_replace (array ('<', '>'), '', $aMessageWords [1]), $aMessageWords);
 
         $pBot -> send ('PRIVMSG #lvp.echo :!msg ' . \Util :: getPieces ($sMessage, ' ', 2));
+    }
+
+    public static function addMqdCommands (Commands $moduleManager)
+    {
+        $moduleManager -> registerCommand (new \ Command ('mqd-on',
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
+            {
+                $id = Timer :: create (
+                    function () use ($pBot)
+                    {
+                        \LVP\InGame\QuoteDevice::sendRandomMessage($pBot);
+                    },
+                    mt_rand (300, 420) * 1000,
+                    false);
+
+                file_put_contents(\LVP\InGame\QuoteDevice :: $m_sMqdFileName, $id);
+            },
+            'mqd'
+        ));
+
+        $moduleManager -> registerCommand (new \ Command ('mqd-off',
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
+            {
+                $bSuccess = Timer :: destroy (file_get_contents (\LVP\InGame\QuoteDevice :: $m_sMqdFileName));
+                if ($bSuccess === false)
+                {
+                    echo 'Couldn\'t turn off';
+                    return \ Command :: OUTPUT_ERROR;
+                }
+                else
+                {
+                    echo 'Turned off.';
+                    file_put_contents (\LVP\InGame\QuoteDevice :: $m_sMqdFileName, '');
+                    return \ Command :: OUTPUT_SUCCESS;
+                }
+            },
+            'mqd'
+        ));
     }
 }
