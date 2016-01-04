@@ -42,7 +42,7 @@ class Notification extends ModuleBase
      * @var boolean
      */
 
-    const   NOTIFICATION_NETWORK_WIDE       = false;
+    const   NOTIFICATION_NETWORK_WIDE       = true;
 
     /**
      * Define a maximum number of messages which we can store per user. Without a limit this
@@ -51,7 +51,7 @@ class Notification extends ModuleBase
      * @var integer
      */
 
-    const   NOTIFICATION_MESSAGE_LIMIT      = 10;
+    const   NOTIFICATION_MESSAGE_LIMIT      = 20;
 
     /**
      * The active notifications will be stored in this array. Each notification stores the date,
