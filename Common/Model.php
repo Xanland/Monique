@@ -23,8 +23,6 @@
 
 namespace Nuwani;
 
-use Nuwani\Common\stringHelper;
-
 if (!class_exists ('\PDO'))
 {
     /** PDO is not required by the bot's core. * */
@@ -33,11 +31,6 @@ if (!class_exists ('\PDO'))
 
 class Model
 {
-    /**
-     * Given when specified value in primary key-column already exists.
-     */
-    const DUPLICATE_ENTRY_FOR_KEY_PRIMARY = 23000;
-
     /**
      * Id from the row to get.
      *
@@ -63,12 +56,20 @@ class Model
     private $_sTable;
 
     /**
-     * The data of the row.
+     * The data which can be muted of the row.
      *
      * @access private
      * @var array
      */
-    private $_aData;
+    private $_aMutableData;
+
+    /**
+     * The actual data representing the table-row.
+     *
+     * @access private
+     * @var array
+     */
+    private $_aLoadedData;
 
     /**
      * The connection with the database via PDO.
@@ -78,8 +79,6 @@ class Model
      */
     private $_pPDO;
 
-    private $bypassInsert;
-
     /**
      * Sets the table where to select from based on the given id and id-column. Based on the last param it connects to
      * the database or not.
@@ -88,19 +87,14 @@ class Model
      * @param string $sIdColumn         Column to select from
      * @param string $sId               Id to the select in the specified column
      * @param bool   $connectToDatabase If it should connect to the database
-     * @param bool   $bypassInsert      Makes from the insert an update
      */
-    //public function __construct ($sTable, $sIdColumn, $sId, $connectToDatabase = true)
-    public function __construct (string $sTable, string $sIdColumn, string $sId, bool $connectToDatabase = true, bool
-    $bypassInsert = false)
+    public function __construct (string $sTable, string $sIdColumn, string $sId, bool $connectToDatabase = true)
     {
         $this->_sTable = $sTable;
 
         $this->_sIdColumn = $sIdColumn;
 
         $this->_sId = $sId;
-
-        $this->bypassInsert = $bypassInsert;
 
         if ($connectToDatabase)
         {
@@ -128,27 +122,23 @@ class Model
             $oStmt->bindParam (':sId', $this->_sId, \ PDO::PARAM_STR);
             $oStmt->execute ();
 
+            if ($oStmt->rowCount() === 0)
+                return;
+
             for ($i = 0; $i < $oStmt->columnCount (); $i++)
             {
                 $aColumnInfo = $oStmt->getColumnMeta ($i);
                 $sColumnName = $aColumnInfo ['name'];
-                $oStmt->bindColumn ($sColumnName, $this->_aData [$sColumnName]);
+                $oStmt->bindColumn ($sColumnName, $this->_aLoadedData [$sColumnName]);
             }
 
-            if ($oStmt->fetch (\ PDO::FETCH_BOUND))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            $oStmt->fetch (\ PDO::FETCH_BOUND);
+            $this->_aMutableData = $this->_aLoadedData;
+            return;
         }
         catch (\ PDOException $e)
         {
-            $e->getMessage ();
-
-            return false;
+            return;
         }
     }
 
@@ -159,18 +149,24 @@ class Model
      */
     public function save ()
     {
-        foreach ($this->_aData as $sVarName => $sVarValue)
+        if ($this->_aLoadedData == [])
         {
-            if ($sVarName == $this->_sIdColumn && !$this->bypassInsert)
+            $this->_aMutableData = array ($this->_sIdColumn => $this->_sId) + $this->_aMutableData;
+        }
+
+        print_r($this);
+        foreach ($this->_aMutableData as $sVarName => $sVarValue)
+        {
+            if ($sVarValue == $this->_aLoadedData[$sVarName])
+                continue;
+
+            if ($this->_aLoadedData == [])
             {
-                $sQuery = "insert " . $this->_sTable . " (" . $sVarName . ")
+                $sQuery = "insert " . $this->_sTable . " (" . $this->_sIdColumn . ")
                            select :sVarValue; ";
             }
             else
             {
-                if ($sVarName == stringHelper::Format("{0}_id", $this -> _sTable) || $sVarName == 'id')
-                    continue;
-
                 $sQuery = "update " . $this->_sTable . "
                            set " . $sVarName . " = :sVarValue
                            where " . $this->_sIdColumn . " like :sId;";
@@ -185,21 +181,20 @@ class Model
                 }
 
                 $oStmt = $this -> _pPDO -> prepare ($sQuery);
+
                 $oStmt -> bindParam (':sVarValue', $sVarValue);
-                if ($sVarName != $this->_sIdColumn)
+                if ($this->_aLoadedData != [])
                 {
                     $oStmt->bindParam (':sId', $this -> _sId);
                 }
 
-                $oStmt -> execute();
-
-                if ($oStmt -> errorInfo()[0] == Model::DUPLICATE_ENTRY_FOR_KEY_PRIMARY)
-                    continue;
+                if($oStmt->execute())
+                    $this->_aLoadedData[$sVarName] = $sVarValue;
+//                else
+//                    print_r ($oStmt->errorInfo());
             }
             catch (\ PDOException $e)
             {
-                echo $e->getMessage ();
-
                 return false;
             }
         }
@@ -219,7 +214,7 @@ class Model
     {
         if (isset ($sVarName))
         {
-            return $this->_aData [$sVarName];
+            return $this->_aMutableData [$sVarName];
         }
 
         throw \Exception($sVarName . ' not found!');
@@ -233,7 +228,7 @@ class Model
      */
     public function __set (string $sVarName, $sVarValue)
     {
-        $this->_aData [$sVarName] = $sVarValue;
+        $this->_aMutableData [$sVarName] = $sVarValue;
     }
 
     /**
@@ -252,6 +247,7 @@ class Model
             $oStmt -> bindParam (':sId', $this -> _sId);
             if ($oStmt -> execute ())
             {
+                $this->_aMutableData = $this->_aLoadedData = [];
                 return true;
             }
             else
@@ -291,8 +287,7 @@ class Model
 
             foreach ($oStmt->fetchAll (\ PDO :: FETCH_ASSOC) as $aRow)
             {
-                $aModels[$i] = new Model ($this -> _sTable, $this -> _sIdColumn, $aRow [$this -> _sIdColumn], false,
-                    $this->bypassInsert);
+                $aModels[$i] = new Model ($this -> _sTable, $this -> _sIdColumn, $aRow [$this -> _sIdColumn], false);
                 foreach ($aRow as $sKey => $sValue)
                 {
                     $aModels[$i] -> $sKey = $sValue;

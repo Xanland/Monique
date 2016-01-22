@@ -33,6 +33,7 @@ use Commands;
 use LVP;
 use LVP\LVPQueryApi;
 use Nuwani\BotManager;
+use Nuwani\Common\stringHelper;
 use Nuwani\Model;
 
 class Seen
@@ -47,39 +48,40 @@ class Seen
      *
      * @param string $fieldName    Name of the field to search on
      * @param string $value        Value of the field defined in $fieldName
-     * @param bool   $bypassInsert Makes from the insert an update
      *
      * @return mixed False or the object of the player
      */
-    public static function getPersonSeenData (string $fieldName, string $value, bool $bypassInsert = false)
+    public static function getPersonSeenData (string $fieldName, string $value)
     {
-        return new Model (self :: SEEN_TABLE, $fieldName, $value, true, $bypassInsert);
+        return new Model (self :: SEEN_TABLE, $fieldName, $value);
     }
 
     /**
      * Sets the data of the person after he changed their name or joined or left the game
      *
+     * @param int    $id     Id of the player
      * @param string $name   Username of the player
-     * @param string $id     User-id of the player
      * @param string $reason Why the user left the game (or that it is online)
      *
      * @return bool
      */
     private static function setPersonSeenData (int $id, string $name, string $reason = 'online')
     {
-        if ($name == '')
+        if (stringHelper::IsNullOrWhiteSpace($name))
             $person = self :: getPersonSeenData ('iId', $id);
         else
-            $person = self :: getPersonSeenData ('lvp_person_last_seen_id', $name);
+        {
+            $person = self:: getPersonSeenData ('lvp_person_last_seen_id', $name);
+            $person->lvp_person_last_seen_id = $name;
+        }
 
-        $person -> lvp_person_last_seen_id = $name;
         $person -> iId = $id;
         $person -> iTime = time ();
         $person -> sReason = $reason;
-        if (!$person -> save ())
-            return false;
+        if ($person -> save ())
+            return true;
 
-        return true;
+        return false;
     }
 
     /**
@@ -94,12 +96,12 @@ class Seen
         if (preg_match('/\[(.+)\] \*\*\* (.+) (.+) the game(.*)\./', $personInfo, $personData))
         {
             if ($personData [3] == 'joined' && $personData[4] == '')
-                return self :: setPersonSeenData ($personData [1], $personData [2]);
+                self :: setPersonSeenData ($personData [1], $personData [2]);
             else if ($personData [3] == 'left' && $personData[4] != '')
-                return self :: setPersonSeenData (-1, $personData [2], $personData [4]);
+                self :: setPersonSeenData (-1, $personData [2], $personData [4]);
         }
         else if (preg_match('/\[(.+)\] \*\*\* (.+) decided to play as a guest\./', $personInfo, $personData))
-            return self :: setPersonSeenData ($personData [1], '', ' (leaving)');
+            self :: setPersonSeenData ($personData [1], '', ' (leaving)');
     }
 
     /**
@@ -170,9 +172,9 @@ class Seen
             $j++;
         }
 
-        $pBot = BotManager :: getInstance () -> offsetGet ('channel:' . LVP :: LOGGING_CHANNEL);
-        $pBot -> send ('PRIVMSG ' . LVP :: LOGGING_CHANNEL . ' :LVP\InGame\Seen\syncOnlinePlayers: Synced ' .
-            $amountOfPlayersSynced . ' players.');
+//        $pBot = BotManager :: getInstance () -> offsetGet ('channel:' . LVP :: LOGGING_CHANNEL);
+//        $pBot -> send ('PRIVMSG ' . LVP :: LOGGING_CHANNEL . ' :LVP\InGame\Seen\syncOnlinePlayers: Synced ' .
+//            $amountOfPlayersSynced . ' players.');
     }
 
     /**
@@ -185,17 +187,24 @@ class Seen
         $moduleManager -> registerCommand (new \ Command ('.seen',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if ($aParams [0] == '')
+                if (stringHelper::IsNullOrWhiteSpace($aParams [0]))
                     echo '!msg * Usage: .seen <username>';
                 else
                 {
                     $oLastSeenPerson = self :: getPersonSeenData ('lvp_person_last_seen_id', $aParams[0]);
-                    if (!is_null ($oLastSeenPerson -> lvp_person_last_seen_id))
+                    if (!stringHelper::IsNullOrWhiteSpace($oLastSeenPerson -> lvp_person_last_seen_id))
                     {
-                        if ($oLastSeenPerson -> sReason == 'online')
-                            echo '!msg ' . $oLastSeenPerson -> lvp_person_last_seen_id . ' is already online for ' . \ Util :: formatTime (time () - $oLastSeenPerson -> iTime, true) . '.';
+                        if ($oLastSeenPerson -> sReason != 'online')
+                        {
+                            echo stringHelper::Format ('!msg {0} was last seen online {1]{2].',
+                                $oLastSeenPerson -> lvp_person_last_seen_id, date ('H:i:s @ d-m-Y', $oLastSeenPerson -> iTime));
+                        }
                         else
-                            echo '!msg ' . $oLastSeenPerson -> lvp_person_last_seen_id . ' was last seen online ' . date ('H:i:s @ d-m-Y', $oLastSeenPerson -> iTime) . $oLastSeenPerson -> sReason;
+                        {
+                            echo stringHelper::Format ('!msg {0} is already online for {1}.',
+                                $oLastSeenPerson -> lvp_person_last_seen_id,
+                                \ Util:: formatTime (time () - $oLastSeenPerson -> iTime, true), $oLastSeenPerson -> sReason);
+                        }
                     }
                     else
                         echo '!msg * Error: Sorry, this username has not (yet) been found.';
@@ -209,7 +218,7 @@ class Seen
      */
     public static function resetOnlinePlayersAtGamemodeInit ()
     {
-        $onlinePlayers = self :: getPersonSeenData ('sReason', 'online', true);
+        $onlinePlayers = self :: getPersonSeenData ('sReason', 'online');
         foreach ($onlinePlayers -> getAll() as $onlinePlayer)
         {
             $onlinePlayer -> iId = -1;

@@ -92,7 +92,7 @@ class LVP extends \ModuleBase
         $sChannel = strtolower ($sChannel);
         $sMessage = Util::stripFormat ($sMessage);
 
-        if ($sChannel == self :: ECHO_CHANNEL)
+        if ($sChannel == self :: ECHO_CHANNEL || $sChannel == self :: LOGGING_CHANNEL)
         {
             if (in_array ($sNickname, $this->m_aEchoBots))
             {
