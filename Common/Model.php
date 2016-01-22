@@ -56,7 +56,7 @@ class Model
     private $_sTable;
 
     /**
-     * The data which can be muted of the row.
+     * The data of the row which can be muted.
      *
      * @access private
      * @var array
@@ -154,7 +154,6 @@ class Model
             $this->_aMutableData = array ($this->_sIdColumn => $this->_sId) + $this->_aMutableData;
         }
 
-        print_r($this);
         foreach ($this->_aMutableData as $sVarName => $sVarValue)
         {
             if ($sVarValue == $this->_aLoadedData[$sVarName])
@@ -171,7 +170,7 @@ class Model
                            set " . $sVarName . " = :sVarValue
                            where " . $this->_sIdColumn . " like :sId;";
             }
-            //echo str_replace (array (':sVarValue', ':sId'), array ($sVarValue, $this -> _sId), $sQuery);
+            //echo str_replace (array (':sVarValue', ':sId'), array ($sVarValue, $this -> _sId), $sQuery) . PHP_EOL;
 
             try
             {
@@ -189,7 +188,12 @@ class Model
                 }
 
                 if($oStmt->execute())
+                {
                     $this->_aLoadedData[$sVarName] = $sVarValue;
+
+//                    if ($sVarName == $this->_sIdColumn)
+//                        $this->_sId = $sVarValue;
+                }
 //                else
 //                    print_r ($oStmt->errorInfo());
             }

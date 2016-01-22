@@ -32,7 +32,7 @@ namespace LVP\InGame;
 use Commands;
 use LVP;
 use LVP\LVPQueryApi;
-use Nuwani\BotManager;
+//use Nuwani\BotManager;
 use Nuwani\Common\stringHelper;
 use Nuwani\Model;
 
@@ -67,15 +67,19 @@ class Seen
      */
     private static function setPersonSeenData (int $id, string $name, string $reason = 'online')
     {
-        if (stringHelper::IsNullOrWhiteSpace($name))
-            $person = self :: getPersonSeenData ('iId', $id);
+        if (stringHelper::IsNullOrWhiteSpace ($name))
+        {
+            $person = self:: getPersonSeenData ('iId', $id);
+            self::setPersonSeenData(-1, $person -> lvp_person_last_seen_id, $reason);
+            return;
+        }
         else
         {
             $person = self:: getPersonSeenData ('lvp_person_last_seen_id', $name);
-            $person->lvp_person_last_seen_id = $name;
+            $person -> lvp_person_last_seen_id = $name;
+            $person -> iId = $id;
         }
 
-        $person -> iId = $id;
         $person -> iTime = time ();
         $person -> sReason = $reason;
         if ($person -> save ())
@@ -130,7 +134,7 @@ class Seen
             {
                 if ($oPerson -> sReason != 'online')
                 {
-                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'];
+                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'][$i];
                     $oPerson -> sReason = 'online';
                     $oPerson -> iId = $aOnlinePlayers['id'][$i];
                     $oPerson -> iTime = time();
@@ -142,7 +146,7 @@ class Seen
             {
                 if ($oPerson -> sReason == 'online')
                 {
-                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'];
+                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'][$i];
                     $oPerson -> sReason = ' (desync)';
                     $oPerson -> iId = -1;
                     $oPerson -> iTime = time();
