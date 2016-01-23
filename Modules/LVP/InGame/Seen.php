@@ -200,8 +200,9 @@ class Seen
                     {
                         if ($oLastSeenPerson -> sReason != 'online')
                         {
-                            echo stringHelper::Format ('!msg {0} was last seen online {1]{2].',
-                                $oLastSeenPerson -> lvp_person_last_seen_id, date ('H:i:s @ d-m-Y', $oLastSeenPerson -> iTime));
+                            echo stringHelper::Format ('!msg {0} was last seen online {1}{2}.',
+                                $oLastSeenPerson -> lvp_person_last_seen_id, date ('H:i:s @ d-m-Y', $oLastSeenPerson -> iTime),
+                                $oLastSeenPerson -> sReason);
                         }
                         else
                         {

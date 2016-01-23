@@ -34,7 +34,7 @@ class stringHelper
      *
      * @return bool If the string is null or empty.
      */
-    private static function IsNullOrEmpty (string $stringToCheck)
+    private static function IsNullOrEmpty ($stringToCheck)
     {
         return is_null ($stringToCheck) || empty($stringToCheck);
     }
@@ -46,7 +46,7 @@ class stringHelper
      *
      * @return bool If the string is empty or only contains spaces.
      */
-    public static function IsNullOrWhiteSpace (string $stringToCheck)
+    public static function IsNullOrWhiteSpace ($stringToCheck)
     {
         return self::IsNullOrEmpty($stringToCheck) || trim($stringToCheck) === 0;
     }
