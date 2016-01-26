@@ -71,6 +71,7 @@ class Seen
         {
             $person = self:: getPersonSeenData ('iId', $id);
             self::setPersonSeenData(-1, $person -> lvp_person_last_seen_id, $reason);
+            unset ($person);
             return;
         }
         else
@@ -113,67 +114,36 @@ class Seen
      */
     public static function syncOnlinePlayers ()
     {
-        $oApi               = new LVPQueryApi();
-        $aPlayerInformation = $oApi -> getDetailedPlayers ();
-        $aOnlinePlayers     = array();
+        $oApi           = new LVPQueryApi();
+        $aIngamePlayers = $oApi -> getDetailedPlayers ();
 
-        $ii = 0;
-        foreach ($aPlayerInformation as $aPlayer)
-        {
-            $aOnlinePlayers['name'][$ii] = $aPlayer['nickname'];
-            $aOnlinePlayers['id'][$ii] = $aPlayer['playerid'];
-            $ii++;
-        }
-
-        $oSeenData = self :: getPersonSeenData('lvp_person_last_seen_id', '%');
-        $i = 0;
         $amountOfPlayersSynced = 0;
+        $oSeenData = self :: getPersonSeenData('lvp_person_last_seen_id', '%');
         foreach ($oSeenData -> getAll() as $oPerson)
         {
-            if (in_array($oPerson -> lvp_person_last_seen_id, $aOnlinePlayers['name']))
+            if (!in_array($oPerson -> lvp_person_last_seen_id, $aIngamePlayers) && ($oPerson -> sReason == 'online'))
             {
-                if ($oPerson -> sReason != 'online')
-                {
-                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'][$i];
-                    $oPerson -> sReason = 'online';
-                    $oPerson -> iId = $aOnlinePlayers['id'][$i];
-                    $oPerson -> iTime = time();
-                    if ($oPerson -> save ())
-                        $amountOfPlayersSynced++;
-                }
+                $oPerson -> sReason = ' (desync)';
+                $oPerson -> iId = -1;
+                $oPerson -> iTime = time();
+                if ($oPerson -> save ())
+                    $amountOfPlayersSynced++;
             }
-            else
-            {
-                if ($oPerson -> sReason == 'online')
-                {
-                    //$oPerson -> lvp_person_last_seen_id = $aOnlinePlayers['name'][$i];
-                    $oPerson -> sReason = ' (desync)';
-                    $oPerson -> iId = -1;
-                    $oPerson -> iTime = time();
-                    if ($oPerson -> save ())
-                        $amountOfPlayersSynced++;
-                }
-            }
-
-            $i++;
         }
 
-        $j = 0;
-        foreach ($aOnlinePlayers['name'] as $sName)
+        foreach ($aIngamePlayers as $iPlayerId => $sNickname)
         {
-            $oPlayer = self :: getPersonSeenData ('lvp_person_last_seen_id', $sName);
+            $oPlayer = self :: getPersonSeenData ('lvp_person_last_seen_id', $sNickname);
 
             if ($oPlayer -> sReason != 'online')
             {
-                $oPlayer -> lvp_person_last_seen_id = $sName;
+                $oPlayer -> lvp_person_last_seen_id = $sNickname;
                 $oPlayer -> sReason = 'online';
-                $oPlayer -> iId = $aOnlinePlayers['id'][$j];
+                $oPlayer -> iId = $iPlayerId;
                 $oPlayer -> iTime = time();
                 if ($oPlayer -> save ())
                     $amountOfPlayersSynced++;
             }
-
-            $j++;
         }
 
 //        $pBot = BotManager :: getInstance () -> offsetGet ('channel:' . LVP :: LOGGING_CHANNEL);
@@ -208,7 +178,7 @@ class Seen
                         {
                             echo stringHelper::Format ('!msg {0} is already online for {1}.',
                                 $oLastSeenPerson -> lvp_person_last_seen_id,
-                                \ Util:: formatTime (time () - $oLastSeenPerson -> iTime, true), $oLastSeenPerson -> sReason);
+                                \ Util:: formatTime (time () - $oLastSeenPerson -> iTime));
                         }
                     }
                     else
@@ -223,13 +193,16 @@ class Seen
      */
     public static function resetOnlinePlayersAtGamemodeInit ()
     {
-        $onlinePlayers = self :: getPersonSeenData ('sReason', 'online');
+        $onlinePlayers = self :: getPersonSeenData ('lvp_person_last_seen_id', '%');
         foreach ($onlinePlayers -> getAll() as $onlinePlayer)
         {
-            $onlinePlayer -> iId = -1;
-            $onlinePlayer -> iTime = time();
-            $onlinePlayer -> sReason = ' (init)';
-            $onlinePlayer -> save ();
+            if ($onlinePlayer -> sReason == 'online')
+            {
+                $onlinePlayer -> iId = -1;
+                $onlinePlayer -> iTime = time();
+                $onlinePlayer -> sReason = ' (init)';
+                $onlinePlayer -> save ();
+            }
         }
     }
 }

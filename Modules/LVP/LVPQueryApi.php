@@ -136,7 +136,13 @@ class LVPQueryApi
             unset($aPlayer);
         }
 
-        return $aDetails;
+        $aOnlinePlayers = [];
+        foreach ($aDetails as $aIngamePlayer)
+        {
+            $aOnlinePlayers[$aIngamePlayer['playerid']] = $aIngamePlayer['nickname'];
+        }
+
+        return $aOnlinePlayers;
     }
 
     /**

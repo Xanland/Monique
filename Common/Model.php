@@ -212,7 +212,7 @@ class Model
      * @param string $sVarName
      *
      * @return mixed
-     * @throws Exception Var not found when not set.
+     * @throws \Exception Var not found when not set.
      */
     public function __get (string $sVarName)
     {
@@ -296,6 +296,7 @@ class Model
                 {
                     $aModels[$i] -> $sKey = $sValue;
                 }
+                $aModels[$i]->fillLoadedData();
 
                 $i++;
             }
@@ -315,7 +316,7 @@ class Model
      */
     public function __sleep ()
     {
-        return array ('_aData');
+        return array ('_aLoadedData');
     }
 
     /**
@@ -333,5 +334,13 @@ class Model
     {
         $this->_pPDO = Database:: getInstance ();
         $this->_pPDO->setAttribute (\ PDO :: ATTR_ERRMODE, \ PDO :: ERRMODE_WARNING);
+    }
+
+    /**
+     * Copies the data of the mutable-array in the loadeddata-array.
+     */
+    public function fillLoadedData()
+    {
+        $this->_aLoadedData = $this->_aMutableData;
     }
 }
