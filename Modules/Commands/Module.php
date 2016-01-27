@@ -764,9 +764,11 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
         {
             return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
-        elseif (isset ($this -> m_aCommands [$aArguments[2]]))
+        elseif (isset ($this -> m_aCommands [$aArguments[1]]))
         {
-            unset ($aArguments [0], $aArguments [1]);
+            $sCommand = $aArguments[1];
+            unset ($aArguments [0], $aArguments[1]);
+            $aArguments = array_values($aArguments);
             return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
 
