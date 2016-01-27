@@ -183,6 +183,10 @@ class Notification extends ModuleBase
 
                 $oNotification -> delete();
             }
+
+            $key = array_search($loweredNickname, $this->notificatedUsers);
+            if ($key !== false)
+                unset($this->notificatedUsers[$key]);
         }
 
         return true;
