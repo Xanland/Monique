@@ -22,6 +22,9 @@
  */
 
 use Nuwani\Bot;
+use Nuwani\Common\stringHelper;
+use Nuwani\Model;
+use Nuwani\ModuleManager;
 
 class Notification extends ModuleBase
 {
@@ -32,7 +35,7 @@ class Notification extends ModuleBase
      * @var string
      */
 
-    const   NOTIFICATION_COMMAND_NAME       = '?dotell';
+    const   NOTIFICATION_COMMAND_NAME       = 'tell';
 
     /**
      * Notifications can be either network wide (default) or on a per-channel basis. While the
@@ -42,7 +45,7 @@ class Notification extends ModuleBase
      * @var boolean
      */
 
-    const   NOTIFICATION_NETWORK_WIDE       = true;
+    const   NOTIFICATION_NETWORK_WIDE       = false;
 
     /**
      * Define a maximum number of messages which we can store per user. Without a limit this
@@ -51,16 +54,25 @@ class Notification extends ModuleBase
      * @var integer
      */
 
-    const   NOTIFICATION_MESSAGE_LIMIT      = 20;
+    const   NOTIFICATION_MESSAGE_LIMIT      = PHP_INT_MAX;
 
     /**
-     * The active notifications will be stored in this array. Each notification stores the date,
-     * channel it was set in, network it was set in, the source-user and the recieving-user.
+     * Notifications are saved in the database. When saving them or looking them up we have to
+     * know in which database table we have to take a look.
+     *
+     * @var string
+     */
+
+    const   NOTIFICATION_TABLE              = 'notification';
+
+    /**
+     * The notificated users will be stored in this array. This way we take away a call to
+     * the database EVERYTIME someone said something in a channel.
      *
      * @var array
      */
 
-    private $notifications;
+    private $notificatedUsers;
 
     /**
      * Loading the notifications from a file is important, considering an IRC bot won't be
@@ -70,48 +82,67 @@ class Notification extends ModuleBase
 
     public function __construct ()
     {
-            $this -> notifications = array ();
-            if (file_exists (__DIR__ . '/../Data/notifications.dat'))
-            {
-                    $serializedNotifications = file_get_contents (__DIR__ . '/../Data/notifications.dat');
-                    if (strlen ($serializedNotifications) < 6) // minimum length of a serialized array.
-                            return;
+        $this->notificatedUsers = [];
+        foreach((new Model(self :: NOTIFICATION_TABLE, 'notification_id', '%'))->getAll() as $oNotification)
+        {
+            $sReceiver = strtolower($oNotification -> sReceiver);
+            if (!in_array($sReceiver, $this->notificatedUsers))
+                $this->notificatedUsers[] = $sReceiver;
+        }
 
-                    $savedNotifications = unserialize ($serializedNotifications);
-                    if (is_array ($savedNotifications) && count ($savedNotifications) > 0)
-                    {
-                            $this -> notifications = $savedNotifications;
-                    }
-            }
+        $this->registerTellCommand();
     }
 
     /**
-     * In order to properly save all notifications when the bot is being shut down, we'll make
-     * sure the save() method gets triggered upon destruction of this class.
+     * To know on which command we have to reply on when someone wants to set a notification, we
+     * have to register the command with the Commands-module.     *
      */
-
-    public function __destruct ()
+    private function registerTellCommand()
     {
-            $this -> save ();
-    }
-
-    /**
-     * Storing the notifications to a file makes sure that they will be available in future
-     * sessions of this bot. We'll use the file "notifications.dat" for this purpose.
-     *
-     * @return boolean Were we able to properly store all the notifications?
-     */
-
-    public function save ()
-    {
-            $serializedNotifications = serialize ($this -> notifications);
-            if (is_writable (__DIR__ . '/../Data/notifications.dat'))
+        $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
+        $moduleManager -> registerCommand (new \ Command (self :: NOTIFICATION_COMMAND_NAME,
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                    file_put_contents (__DIR__ . '/../Data/notifications.dat', $serializedNotifications);
-                    return true;
-            }
+                if (stringHelper::IsNullOrWhiteSpace($sMessage))
+                {
+                    echo 'nickname message';
+                    return Command::OUTPUT_USAGE;
+                }
 
-            return false;
+                list ($sReceiver, $sNotification) = explode (' ', $sMessage, 2);
+                if (strtolower($sReceiver) == strtolower($sNickname))
+                {
+                    echo 'You cannot send notifications to yourself.';
+                    return Command::OUTPUT_INFO;
+                }
+
+                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $sReceiver);
+                if (count($oNotification->getAll()) >= self :: NOTIFICATION_MESSAGE_LIMIT)
+                {
+                    echo 'The message could not be stored, because there are already ' .
+                        self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $sReceiver;
+                    return Command::OUTPUT_INFO;
+                }
+
+                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'iTimestamp', time());
+                $oNotification -> sReceiver = $sReceiver;
+                $oNotification -> sSender = $sNickname;
+                $oNotification -> sMessage = $sNotification;
+                $oNotification -> iTimestamp = time ();
+                $oNotification -> sNetwork = $pBot ['Network'];
+                $oNotification -> sChannel = $sChannel;
+
+                if ($oNotification -> save())
+                {
+                    $sReceiver = strtolower($oNotification -> sReceiver);
+                    if (!in_array($sReceiver, $this->notificatedUsers))
+                        $this->notificatedUsers[] = $sReceiver;
+
+                    echo 'Sure ' . $sNickname . '!';
+                }
+                return;
+            }
+        ));
     }
 
     /**
@@ -127,91 +158,34 @@ class Notification extends ModuleBase
 
     public function onChannelPrivmsg (Bot $bot, $channel, $nickname, $message)
     {
-            /**
-             * The first check which we do is to see whehter the user is trying to register a
-             * new notification. The message has to start with the chosen command name.
-             */
+        /**
+         * We have to check if we might have to inform them of pending messages,
+         * which requires an easy lookup in the local notificatedUsers array.
+         */
 
-            $loweredNickname  = strtolower ($nickname);
-            $processedCommand = false;
+        $loweredNickname  = strtolower ($nickname);
 
-            if (substr ($message, 0, strlen (self :: NOTIFICATION_COMMAND_NAME)) == self :: NOTIFICATION_COMMAND_NAME)
+        if (in_array($loweredNickname, $this->notificatedUsers))
+        {
+            foreach((new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $nickname))->getAll() as $oNotification)
             {
-                    $commandParameters = trim (substr ($message, strlen (self :: NOTIFICATION_COMMAND_NAME) + 1));
-                    if (strlen ($commandParameters) == 0 || strpos ($commandParameters, ' ') === false)
-                    {
-                            $bot -> send ('PRIVMSG ' . $channel . ' :10Usage: ' . self :: NOTIFICATION_COMMAND_NAME . ' nickname message');
-                            return true;
-                    }
+                if ($oNotification -> sNetwork != $bot ['Network'])
+                    continue;
 
-                    list ($receiver, $notification) = explode (' ', $commandParameters, 2);
-                    $receiver = strtolower ($receiver);
+                if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification -> sChannel != $channel)
+                    continue;
 
-                    if ($receiver == $loweredNickname)
-                    {
-                            $bot -> send ('PRIVMSG ' . $channel . ' :10Warning: You cannot send notifications to yourself.');
-                            return true;
-                    }
+                $timeDifference = $this -> formatNotificationInterval ($oNotification -> iTimestamp);
+                $notificationMessage = $nickname . ', ' . $oNotification -> sSender . ' said: ' .
+                    $oNotification -> sMessage . ' 15(' . $timeDifference . ')';
 
-                    if (!isset ($this -> notifications [$receiver]))
-                    {
-                            $this -> notifications [$receiver] = array ();
-                    }
+                $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
 
-                    if (count ($this -> notifications [$receiver]) >= self :: NOTIFICATION_MESSAGE_LIMIT)
-                    {
-                            $bot -> send ('PRIVMSG ' . $channel . ' :10Warning: The message could not be stored, because there are already ' . self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $receiver);
-                            return true;
-                    }
-
-                    $this -> notifications [$receiver] [] = array
-                    (
-                            'channel'       => $channel,
-                            'network'       => $bot ['Network'],
-                            'sender'        => $nickname,
-                            'message'       => $notification,
-                            'timestamp'     => time ()
-                    );
-
-                    $bot  -> send ('PRIVMSG ' . $channel . ' :Sure ' . $nickname . '!');
-                    $this -> save ();
-
-                    $processedCommand = true;
+                $oNotification -> delete();
             }
+        }
 
-            /**
-             * Otherwise it's possible that we might have to inform them of pending messages,
-             * which requires an easy lookup in the local notifications array.
-             */
-
-            if (isset ($this -> notifications [$loweredNickname]) && $processedCommand === false)
-            {
-                    foreach ($this -> notifications [$loweredNickname] as $index => $notification)
-                    {
-                            if ($notification ['network'] != $bot ['Network'])
-                                    continue;
-
-                            if (self :: NOTIFICATION_NETWORK_WIDE === false && $notification ['channel'] != $channel)
-                                    continue;
-
-                            $timeDifference = $this -> formatNotificationInterval ($notification ['timestamp']);
-                            $notificationMessage = $nickname . ', ' . $notification ['sender'] . ' said: ' . $notification ['message'] . ' 15(' . $timeDifference . ')';
-
-                            $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
-
-                            unset ($this -> notifications [$loweredNickname][$index]);
-                    }
-
-                    if (count ($this -> notifications [$loweredNickname]) == 0)
-                    {
-                            unset ($this -> notifications [$loweredNickname]);
-                    }
-
-                    $this -> save ();
-                    return true;
-            }
-
-            return $processedCommand;
+        return true;
     }
 
     /**
@@ -227,66 +201,66 @@ class Notification extends ModuleBase
 
     private function formatNotificationInterval ($timestamp)
     {
-            $startDate = new DateTime (date ('Y-m-d H:i:s', $timestamp));
-            $endDate   = new DateTime ('now');
+        $startDate = new DateTime (date ('Y-m-d H:i:s', $timestamp));
+        $endDate   = new DateTime ('now');
 
-            $interval  = $startDate -> diff ($endDate);
-            $addPlural = function ($value, $word)
-            {
-                    return $value == 1 ? $word : $word . 's';
-            };
+        $interval  = $startDate -> diff ($endDate);
+        $addPlural = function ($value, $word)
+        {
+            return $value == 1 ? $word : $word . 's';
+        };
 
-            $intervalChunks = array ();
-            if ($interval -> y !== 0) // years
-            {
-                    $format [] = '%y ' . $addPlural ($interval -> y, 'year');
-            }
+        $intervalChunks = array ();
+        if ($interval -> y !== 0) // years
+        {
+            $format [] = '%y ' . $addPlural ($interval -> y, 'year');
+        }
 
-            if ($interval -> m !== 0) // months
-            {
-                    $format [] = '%m ' . $addPlural ($interval -> m, 'month');
-            }
+        if ($interval -> m !== 0) // months
+        {
+            $format [] = '%m ' . $addPlural ($interval -> m, 'month');
+        }
 
-            if ($interval -> d !== 0) // days
-            {
-                    $format [] = '%d ' . $addPlural ($interval -> d, 'day');
-            }
+        if ($interval -> d !== 0) // days
+        {
+            $format [] = '%d ' . $addPlural ($interval -> d, 'day');
+        }
 
-            if ($interval -> h !== 0) // hours
-            {
-                    $format [] = '%h ' . $addPlural ($interval -> h, 'hour');
-            }
+        if ($interval -> h !== 0) // hours
+        {
+            $format [] = '%h ' . $addPlural ($interval -> h, 'hour');
+        }
 
-            if ($interval -> i !== 0) // minutes
-            {
-                    $format [] = '%i ' . $addPlural ($interval -> i, 'minute');
-            }
+        if ($interval -> i !== 0) // minutes
+        {
+            $format [] = '%i ' . $addPlural ($interval -> i, 'minute');
+        }
 
-            if ($interval -> s !== 0 && count ($format) == 0)
-            {
-                    $format [] = 'less than a minute';
-            }
+        if ($interval -> s !== 0 && count ($format) == 0)
+        {
+            $format [] = 'less than a minute';
+        }
 
-            /**
-             * Use the two largest parts to avoid having really long notations of the interval
-             * between the notification's set date, and the current time.
-             */
+        /**
+         * Use the two largest parts to avoid having really long notations of the interval
+         * between the notification's set date, and the current time.
+         */
 
-            $formatString = '';
-            if (count ($format) > 1)
-            {
-                    $formatString = array_shift ($format) . ' and ' . array_shift ($format);
-            }
-            else
-            {
-                    $formatString = array_shift ($format);
-            }
+        $formatString = '';
+        if (count ($format) > 1)
+        {
+            $formatString = array_shift ($format) . ' and ' . array_shift ($format);
+        }
+        else
+        {
+            $formatString = array_shift ($format);
+        }
 
-            /**
-             * Allow PHP's DateInterval::format to do the real work for us, append the text
-             * "ago" to the result and return the string to the callee.
-             */
+        /**
+         * Allow PHP's DateInterval::format to do the real work for us, append the text
+         * "ago" to the result and return the string to the callee.
+         */
 
-            return $interval -> format ($formatString) . ' ago';
+        return $interval -> format ($formatString) . ' ago';
     }
 }

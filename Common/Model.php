@@ -247,6 +247,11 @@ class Model
 
         try
         {
+            if ($this -> _pPDO == null)
+            {
+                $this -> connectToDatabase ();
+            }
+
             $oStmt = $this -> _pPDO -> prepare ($sQuery);
             $oStmt -> bindParam (':sId', $this -> _sId);
             if ($oStmt -> execute ())
