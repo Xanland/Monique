@@ -739,8 +739,7 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
 
     public function onPrivmsg (Bot $pBot, $sNickname, $sMessage)
     {
-        $aParams = explode(' ', $sMessage);
-        if ($sMessage [0] == $this -> m_sPrefix || $aParams [2] [0] == '.')
+        if ($sMessage [0] == $this -> m_sPrefix)
         {
             return $this -> handleCommand ($pBot, false, $sNickname, $sMessage);
         }
@@ -758,26 +757,17 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
 
     private function handleCommand (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
-        $aParams = explode(' ', $sMessage);
         $aArguments = preg_split ('/(\s+)/', $sMessage);
-        if (count ($aArguments) > 2 && $aParams [2] [0] == '.')
-        {
-            unset ($aArguments [0], $aArguments [1]);
-        }
         $sCommand   = $this -> getCommandName (array_shift ($aArguments));
 
         if (isset ($this -> m_aCommands [$sCommand]))
         {
-            $sDestination = $sChannel === false ? $sNickname : $sChannel;
-            $sMessage = trim (substr ($sMessage, strlen ($sCommand) + 2));
-            if (strlen ($sMessage) == 0)
-            {
-                $sMessage = null;
-            }
-
-            $this -> m_aCommands [$sCommand] ($pBot, $sDestination, $sChannel, $sNickname, $aArguments, $sMessage);
-
-            return true;
+            return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
+        }
+        elseif (isset ($this -> m_aCommands [$aArguments[2]]))
+        {
+            unset ($aArguments [0], $aArguments [1]);
+            return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
 
         return false;
@@ -937,6 +927,27 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
         $this -> deleteCommand ($sOffset);
     }
 
-};
+    /**
+     * @param     $sCommand
+     * @param Bot $pBot
+     * @param     $sNickname
+     * @param     $sChannel
+     * @param     $aArguments
+     * @param     $sMessage
+     *
+     * @return bool
+     */
+    private function processCommand ($sCommand, Bot $pBot, $sNickname, $sChannel, $aArguments, $sMessage)
+    {
+        $sDestination = $sChannel === false ? $sNickname : $sChannel;
+        $sMessage     = trim (substr ($sMessage, strlen ($sCommand) + 2));
+        if (strlen ($sMessage) == 0)
+        {
+            $sMessage = null;
+        }
 
-?>
+        $this->m_aCommands[$sCommand] ($pBot, $sDestination, $sChannel, $sNickname, $aArguments, $sMessage);
+
+        return true;
+    }
+}
