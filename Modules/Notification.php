@@ -66,13 +66,13 @@ class Notification extends ModuleBase
     const   NOTIFICATION_TABLE              = 'notification';
 
     /**
-     * The notificated users will be stored in this array. This way we take away a call to
+     * The notified users will be stored in this array. This way we take away a call to
      * the database EVERYTIME someone said something in a channel.
      *
      * @var array
      */
 
-    private $notificatedUsers;
+    private $notifiedUsers;
 
     /**
      * Loading the notifications from a file is important, considering an IRC bot won't be
@@ -82,12 +82,12 @@ class Notification extends ModuleBase
 
     public function __construct ()
     {
-        $this->notificatedUsers = [];
+        $this->notifiedUsers = [];
         foreach((new Model(self :: NOTIFICATION_TABLE, 'notification_id', '%'))->getAll() as $oNotification)
         {
             $sReceiver = strtolower($oNotification -> sReceiver);
-            if (!in_array($sReceiver, $this->notificatedUsers))
-                $this->notificatedUsers[] = $sReceiver;
+            if (!in_array($sReceiver, $this->notifiedUsers))
+                $this->notifiedUsers[] = $sReceiver;
         }
 
         $this->registerTellCommand();
@@ -100,49 +100,65 @@ class Notification extends ModuleBase
     private function registerTellCommand()
     {
         $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
-        $moduleManager -> registerCommand (new \ Command (self :: NOTIFICATION_COMMAND_NAME,
-            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
-            {
-                if (stringHelper::IsNullOrWhiteSpace($sMessage))
+        $a_sCommandTriggers = [self :: NOTIFICATION_COMMAND_NAME, '.memo'];
+        foreach ($a_sCommandTriggers as $commandName)
+        {
+            $moduleManager -> registerCommand (new \ Command ($commandName,
+                function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage) use ($commandName)
                 {
-                    echo 'nickname message';
-                    return Command::OUTPUT_USAGE;
+                    $bIngame = $commandName [0] == '.';
+                    $colorStripper = function (string $text) use ($bIngame)
+                    {
+                        if ($bIngame)
+                            return Util::stripFormat('!msg ' . $text);
+
+                        return $text;
+                    };
+
+                    if (stringHelper::IsNullOrWhiteSpace($sMessage))
+                    {
+                        echo $colorStripper('7* Usage: nickname message');
+                        return;
+                    }
+
+                    list ($sReceiver, $sNotification) = explode (' ', $sMessage, 2);
+                    if (strtolower($sReceiver) == strtolower($sNickname))
+                    {
+                        echo $colorStripper('10* Info: You cannot send notifications to yourself.');
+                        return;
+                    }
+
+                    $oNotification = new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $sReceiver);
+                    if (count($oNotification->getAll()) >= self :: NOTIFICATION_MESSAGE_LIMIT)
+                    {
+                        echo $colorStripper('10* Info: The message could not be stored, because there are already ' .
+                            self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $sReceiver);
+                        return;
+                    }
+
+                    $oNotification = new Model(self :: NOTIFICATION_TABLE, 'iTimestamp', time());
+                    $oNotification -> sReceiver = $sReceiver;
+                    $oNotification -> sSender = $sNickname;
+                    $oNotification -> sMessage = $sNotification;
+                    $oNotification -> iTimestamp = time ();
+                    if(!$bIngame)
+                    {
+                        $oNotification -> sNetwork = $pBot ['Network'];
+                        $oNotification -> sChannel = $sChannel;
+                    }
+
+                    if ($oNotification -> save())
+                    {
+                        $sReceiver = strtolower($oNotification -> sReceiver);
+                        if (!in_array($sReceiver, $this->notifiedUsers))
+                            $this->notifiedUsers[] = $sReceiver;
+
+                        echo $colorStripper('Sure ' . $sNickname . '!');
+                    }
+                    return;
                 }
-
-                list ($sReceiver, $sNotification) = explode (' ', $sMessage, 2);
-                if (strtolower($sReceiver) == strtolower($sNickname))
-                {
-                    echo 'You cannot send notifications to yourself.';
-                    return Command::OUTPUT_INFO;
-                }
-
-                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $sReceiver);
-                if (count($oNotification->getAll()) >= self :: NOTIFICATION_MESSAGE_LIMIT)
-                {
-                    echo 'The message could not be stored, because there are already ' .
-                        self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $sReceiver;
-                    return Command::OUTPUT_INFO;
-                }
-
-                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'iTimestamp', time());
-                $oNotification -> sReceiver = $sReceiver;
-                $oNotification -> sSender = $sNickname;
-                $oNotification -> sMessage = $sNotification;
-                $oNotification -> iTimestamp = time ();
-                $oNotification -> sNetwork = $pBot ['Network'];
-                $oNotification -> sChannel = $sChannel;
-
-                if ($oNotification -> save())
-                {
-                    $sReceiver = strtolower($oNotification -> sReceiver);
-                    if (!in_array($sReceiver, $this->notificatedUsers))
-                        $this->notificatedUsers[] = $sReceiver;
-
-                    echo 'Sure ' . $sNickname . '!';
-                }
-                return;
-            }
-        ));
+            ));
+        }
     }
 
     /**
@@ -160,33 +176,54 @@ class Notification extends ModuleBase
     {
         /**
          * We have to check if we might have to inform them of pending messages,
-         * which requires an easy lookup in the local notificatedUsers array.
+         * which requires an easy lookup in the local notifiedUsers array.
          */
+
+        $bIngame = false;
+        $aParams = explode(' ', $message);
+        if ((strpos($aParams[0], '[') !== false && strpos($aParams[0], ']') !== false) && strpos($aParams[1], ':')
+            !== false)
+        {
+            $bIngame = true;
+            $nickname = trim($aParams[1], ':');
+        }
 
         $loweredNickname  = strtolower ($nickname);
 
-        if (in_array($loweredNickname, $this->notificatedUsers))
+        if (in_array($loweredNickname, $this->notifiedUsers))
         {
+            $colorStripper = function (string $text) use ($bIngame)
+            {
+                if ($bIngame)
+                    return Util::stripFormat('!msg ' . $text);
+
+                return $text;
+            };
+
             foreach((new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $nickname))->getAll() as $oNotification)
             {
-                if ($oNotification -> sNetwork != $bot ['Network'])
-                    continue;
+                if (!$bIngame && !stringHelper::IsNullOrWhiteSpace($oNotification -> sNetwork) &&
+                    !stringHelper::IsNullOrWhiteSpace($oNotification -> sChannel))
+                {
+                    if ($oNotification->sNetwork != $bot ['Network'])
+                        continue;
 
-                if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification -> sChannel != $channel)
-                    continue;
+                    if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification->sChannel != $channel)
+                        continue;
+                }
 
                 $timeDifference = $this -> formatNotificationInterval ($oNotification -> iTimestamp);
-                $notificationMessage = $nickname . ', ' . $oNotification -> sSender . ' said: ' .
-                    $oNotification -> sMessage . ' 15(' . $timeDifference . ')';
+                $notificationMessage = $colorStripper($nickname . ', ' . $oNotification -> sSender . ' said: ' .
+                    $oNotification -> sMessage . ' 15(' . $timeDifference . ')');
 
                 $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
 
                 $oNotification -> delete();
             }
 
-            $key = array_search($loweredNickname, $this->notificatedUsers);
+            $key = array_search($loweredNickname, $this->notifiedUsers);
             if ($key !== false)
-                unset($this->notificatedUsers[$key]);
+                unset($this->notifiedUsers[$key]);
         }
 
         return true;

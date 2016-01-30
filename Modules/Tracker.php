@@ -369,7 +369,8 @@ class Tracker extends ModuleBase
                 $aAllowedKeys = array ('name', 'location', 'channel', 'offset', 'hidden', 'format', 'lastitem', 'updated', 'frequency');
                 if (!in_array ($sKey, $aAllowedKeys))
                 {
-                    $pBot->send ('PRIVMSG ' . $sChannel . ' :4Error: The key must be one of the following: ' . implode (',', $aAllowedKeys));
+                    $pBot->send ('PRIVMSG ' . $sChannel . ' :4Error: The key must be one of the following: ' .
+                        implode (', ', $aAllowedKeys));
                     break;
                 }
 

@@ -722,7 +722,7 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
     public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
         $aParams = explode(' ', $sMessage);
-        if ($sMessage [0] == $this -> m_sPrefix || $aParams [2] [0] == '.')
+        if (($sMessage [0] == $this -> m_sPrefix || $aParams [2] [0] == '.') && substr($sMessage, 0, 2) != $this -> m_sPrefix . '.')
         {
             return $this -> handleCommand ($pBot, $sChannel, $sNickname, $sMessage);
         }
@@ -764,15 +764,41 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
         {
             return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
-        elseif (isset ($this -> m_aCommands [$aArguments[1]]))
+        elseif ($aArguments[1][0] == '.' && isset ($this -> m_aCommands [$aArguments[1]]))
         {
             $sCommand = $aArguments[1];
+            $sNickname = trim($aArguments[0], ':');
+            $sMessage = trim(str_replace(array($aArguments [0], $aArguments[1]), '', $sMessage));
             unset ($aArguments [0], $aArguments[1]);
             $aArguments = array_values($aArguments);
             return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
 
         return false;
+    }
+
+    /**
+     * @param     $sCommand
+     * @param Bot $pBot
+     * @param     $sNickname
+     * @param     $sChannel
+     * @param     $aArguments
+     * @param     $sMessage
+     *
+     * @return bool
+     */
+    private function processCommand ($sCommand, Bot $pBot, $sNickname, $sChannel, $aArguments, $sMessage)
+    {
+        $sDestination = $sChannel === false ? $sNickname : $sChannel;
+        $sMessage     = trim (substr ($sMessage, strlen ($sCommand) + 2));
+        if (strlen ($sMessage) == 0)
+        {
+            $sMessage = null;
+        }
+
+        $this->m_aCommands[$sCommand] ($pBot, $sDestination, $sChannel, $sNickname, $aArguments, $sMessage);
+
+        return true;
     }
 
     /**
@@ -927,29 +953,5 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
     public function offsetUnset ($sOffset)
     {
         $this -> deleteCommand ($sOffset);
-    }
-
-    /**
-     * @param     $sCommand
-     * @param Bot $pBot
-     * @param     $sNickname
-     * @param     $sChannel
-     * @param     $aArguments
-     * @param     $sMessage
-     *
-     * @return bool
-     */
-    private function processCommand ($sCommand, Bot $pBot, $sNickname, $sChannel, $aArguments, $sMessage)
-    {
-        $sDestination = $sChannel === false ? $sNickname : $sChannel;
-        $sMessage     = trim (substr ($sMessage, strlen ($sCommand) + 2));
-        if (strlen ($sMessage) == 0)
-        {
-            $sMessage = null;
-        }
-
-        $this->m_aCommands[$sCommand] ($pBot, $sDestination, $sChannel, $sNickname, $aArguments, $sMessage);
-
-        return true;
     }
 }

@@ -106,7 +106,10 @@ class Seen
                 self :: setPersonSeenData (-1, $personData [2], $personData [4]);
         }
         else if (preg_match('/\[(.+)\] \*\*\* (.+) decided to play as a guest\./', $personInfo, $personData))
+        {
             self :: setPersonSeenData ($personData [1], '', ' (leaving)');
+            self :: setPersonSeenData ($personData [1], $personData [2]);
+        }
     }
 
     /**
