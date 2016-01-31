@@ -105,7 +105,8 @@ class LVP extends \ModuleBase
                 {
                     Seen:: setPersonInformation ($sMessage);
                     Merchant:: setInformation ($sMessage);
-                    QuoteDevice:: setInformation ($pBot, $sMessage);
+                    if ($pBot['Nickname'] == 'Monique')
+                        QuoteDevice:: setInformation ($pBot, $sMessage);
                 }
             }
 

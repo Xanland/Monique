@@ -180,7 +180,7 @@ class Notification extends ModuleBase
          */
 
         $bIngame = false;
-        $aParams = explode(' ', $message);
+        $aParams = explode(' ', Util::stripFormat($message));
         if ((strpos($aParams[0], '[') !== false && strpos($aParams[0], ']') !== false) && strpos($aParams[1], ':')
             !== false)
         {
@@ -192,18 +192,9 @@ class Notification extends ModuleBase
 
         if (in_array($loweredNickname, $this->notifiedUsers))
         {
-            $colorStripper = function (string $text) use ($bIngame)
-            {
-                if ($bIngame)
-                    return Util::stripFormat('!msg ' . $text);
-
-                return $text;
-            };
-
             foreach((new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $nickname))->getAll() as $oNotification)
             {
-                if (!$bIngame && !stringHelper::IsNullOrWhiteSpace($oNotification -> sNetwork) &&
-                    !stringHelper::IsNullOrWhiteSpace($oNotification -> sChannel))
+                if (!$bIngame)
                 {
                     if ($oNotification->sNetwork != $bot ['Network'])
                         continue;
@@ -211,19 +202,31 @@ class Notification extends ModuleBase
                     if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification->sChannel != $channel)
                         continue;
                 }
+                else
+                {
+                    if (!stringHelper::IsNullOrWhiteSpace($oNotification -> sNetwork) &&
+                        !stringHelper::IsNullOrWhiteSpace($oNotification -> sChannel))
+                        continue;
+                }
 
                 $timeDifference = $this -> formatNotificationInterval ($oNotification -> iTimestamp);
-                $notificationMessage = $colorStripper($nickname . ', ' . $oNotification -> sSender . ' said: ' .
-                    $oNotification -> sMessage . ' 15(' . $timeDifference . ')');
+                $notificationMessage = $nickname . ', ' . $oNotification -> sSender . ' said: ' .
+                    $oNotification -> sMessage . ' 15(' . $timeDifference . ')';
+
+                if($bIngame)
+                {
+                    $notificationMessage = Util::stripFormat ('!msg ' . str_replace(')', '', $notificationMessage) .
+                        ' - use .memo to send a message back)');
+                }
 
                 $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
 
                 $oNotification -> delete();
-            }
 
-            $key = array_search($loweredNickname, $this->notifiedUsers);
-            if ($key !== false)
-                unset($this->notifiedUsers[$key]);
+                $key = array_search($loweredNickname, $this->notifiedUsers);
+                if ($key !== false)
+                    unset($this->notifiedUsers[$key]);
+            }
         }
 
         return true;

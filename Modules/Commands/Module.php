@@ -767,10 +767,11 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
         elseif ($aArguments[1][0] == '.' && isset ($this -> m_aCommands [$aArguments[1]]))
         {
             $sCommand = $aArguments[1];
-            $sNickname = trim($aArguments[0], ':');
-            $sMessage = trim(str_replace(array($aArguments [0], $aArguments[1]), '', $sMessage));
-            unset ($aArguments [0], $aArguments[1]);
+            $sNickname = rtrim(Util::stripFormat($aArguments[0]), ':');
+            $sMessage = ' ' . strstr($sMessage, $aArguments[1]);
+            unset($aArguments[0], $aArguments[1]);
             $aArguments = array_values($aArguments);
+
             return $this->processCommand ($sCommand, $pBot, $sNickname, $sChannel, $aArguments, $sMessage);
         }
 
