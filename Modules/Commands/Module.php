@@ -721,10 +721,12 @@ class Commands extends ModuleBase implements ArrayAccess, Countable, IteratorAgg
 
     public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
-        $aParams = explode(' ', $sMessage);
-        if (($sMessage [0] == $this -> m_sPrefix || $aParams [2] [0] == '.') && substr($sMessage, 0, 2) != $this -> m_sPrefix . '.')
+        $aParams = explode(' ', Util::stripFormat($sMessage));
+        if (($aParams [0] [0] == $this -> m_sPrefix && $aParams [0] [1] != '.') // only !<cmd>
+            || (($aParams [0] [0] == '[' && strpos($aParams [0], ']') !== false)
+                && strpos($aParams [1], ':') !== false && $aParams [2] [0] == '.')) // only [23] Xanland: .<cmd>
         {
-            return $this -> handleCommand ($pBot, $sChannel, $sNickname, $sMessage);
+            return $this->handleCommand ($pBot, $sChannel, $sNickname, $sMessage);
         }
     }
 

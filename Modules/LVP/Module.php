@@ -45,14 +45,6 @@ use LVP\InGame\Seen;
 class LVP extends \ModuleBase
 {
     /**
-     * A list of all the bots where we need to recognize messages from or that
-     * the owner can manipulate things.
-     *
-     * @var array
-     */
-    private $m_aEchoBots = array ('Nuwani', 'Nowani', 'Nuweni', 'Nuwini', 'Nuwoni', 'Nuwuni', 'Xanland');
-
-    /**
      * The channel we need to scan for the merchant and last-seen-module.
      */
     const ECHO_CHANNEL = '#lvp.echo';
@@ -94,7 +86,10 @@ class LVP extends \ModuleBase
 
         if ($sChannel == self :: ECHO_CHANNEL || $sChannel == self :: LOGGING_CHANNEL)
         {
-            if (in_array ($sNickname, $this->m_aEchoBots))
+            $pConfiguration = Configuration :: getInstance ();
+            $aConfiguration = $pConfiguration -> get ('LVP');
+
+            if (in_array ($sNickname, $aConfiguration['NuwaniSistersEchoBots']))
             {
                 if ($sMessage == '*** Global Gamemode Initialization')
                 {

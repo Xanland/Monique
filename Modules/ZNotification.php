@@ -26,7 +26,7 @@ use Nuwani\Common\stringHelper;
 use Nuwani\Model;
 use Nuwani\ModuleManager;
 
-class Notification extends ModuleBase
+class ZNotification extends ModuleBase
 {
 	/**
      * Define the command name which should be used for triggering notifications. There are no
