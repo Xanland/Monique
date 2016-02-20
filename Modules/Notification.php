@@ -95,7 +95,7 @@ class Notification extends ModuleBase
 
     /**
      * To know on which command we have to reply on when someone wants to set a notification, we
-     * have to register the command with the Commands-module.     *
+     * have to register the command with the Commands-module.
      */
     private function registerTellCommand()
     {
@@ -114,6 +114,13 @@ class Notification extends ModuleBase
 
                         return $text;
                     };
+
+                    if ($bIngame)
+                    {
+                        $onlineUser = new Model('lvp_person_last_seen', 'lvp_person_last_seen_id', $sNickname);
+                        if ($onlineUser -> sReason != 'online')
+                            return;
+                    }
 
                     if (stringHelper::IsNullOrWhiteSpace($sMessage))
                     {
@@ -215,11 +222,14 @@ class Notification extends ModuleBase
 
                 if($bIngame)
                 {
-                    $notificationMessage = Util::stripFormat ('!msg ' . str_replace(')', '', $notificationMessage) .
-                        ' - use .memo to send a message back)');
+                    $notificationMessage = Util::stripFormat ('!msg ' . $notificationMessage);
                 }
 
                 $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
+                if($bIngame)
+                {
+                    $bot -> send ('PRIVMSG ' . $channel . ' :!msg (use .memo to send a message back)');
+                }
 
                 $oNotification -> delete();
 
