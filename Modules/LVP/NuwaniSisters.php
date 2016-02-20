@@ -102,7 +102,7 @@ class NuwaniSisters
                     }
                     else
                     {
-                        $oMatchingPlayer = new \Nuwani\Model ('lvp_person_last_seen', 'iId', $aParams [0]);
+                        $oMatchingPlayer = new Model ('lvp_person_last_seen', 'iId', $aParams [0]);
                         if ($oMatchingPlayer -> lvp_person_last_seen_id === null)
                             echo 'There is no player with ID ' . $aParams [0] . ' online at the moment. - 4No information about status and/or level available!';
                         else

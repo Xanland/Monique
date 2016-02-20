@@ -35,6 +35,7 @@ require_once 'InGame/QuoteDevice.php';
 require_once 'InGame/Seen.php';
 
 use Nuwani\Bot;
+use Nuwani\Configuration;
 use Nuwani\ModuleManager;
 use LVP\NuwaniSisters;
 use LVP\Radio;
