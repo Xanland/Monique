@@ -42,7 +42,8 @@ class NuwaniSisters
 
     public static function addNuwaniSistersCommands (Commands $moduleManager)
     {
-        $unusableCommandsArray = array ('pm', 'admin', 'say', 'getid', 'msg', 'announce', 'mute');
+        $unusableCommandsArray = array ('pm', 'admin', 'say', 'getid', 'msg', 'announce', 'mute', 'jail', 'ban',
+            'kick');
 
         foreach ($unusableCommandsArray as $command)
         {
@@ -66,16 +67,15 @@ class NuwaniSisters
                 {
                     if (!isset ($aParams [0]))
                     {
+                        Seen :: syncOnlinePlayers();
+
                         $aIngamePlayers = new Model ('lvp_person_last_seen', 'sReason', 'online');
                         $aIngamePlayers = $aIngamePlayers -> getAll ();
-//                        preg_match_all ('/<nickname>(.+)<\/nickname>/', file_get_contents ('http://sa-mp.nl/online.xml'), $aMatches);
 
                         $sEcho = '7Online players - 4No information about status and/or level available! (' . count ($aIngamePlayers) . '): ';
 
                         foreach ($aIngamePlayers as $sPlayer)
                             $sEcho .= $sPlayer -> lvp_person_last_seen_id . ', ';
-
-                        Seen :: syncOnlinePlayers();
 
                         // 512 (max IRC message length) - 2 (\r\n) - 50 (max channel name) - 10 (PRIVMSG part + safety) = 450
                         echo wordwrap (substr ($sEcho, 0, -2), 450, PHP_EOL);

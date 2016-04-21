@@ -88,7 +88,7 @@ class Model
      * @param string $sId               Id to the select in the specified column
      * @param bool   $connectToDatabase If it should connect to the database
      */
-    public function __construct (string $sTable, string $sIdColumn, string $sId, bool $connectToDatabase = true)
+    public function __construct (string $sTable, string $sIdColumn, string $sId = null, bool $connectToDatabase = true)
     {
         $this->_sTable = $sTable;
 
