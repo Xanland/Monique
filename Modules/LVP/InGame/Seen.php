@@ -115,7 +115,7 @@ class Seen
         {
             if (!in_array($oPerson -> lvp_person_last_seen_id, $aIngamePlayers) && ($oPerson -> sReason == 'online'))
             {
-                $oPerson -> sReason = ' (desync)';
+                $oPerson -> sReason = ' (leaving)';
                 $oPerson -> iId = -1;
                 $oPerson -> iTime = time();
                 if ($oPerson -> save ())
