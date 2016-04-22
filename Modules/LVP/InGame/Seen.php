@@ -67,20 +67,9 @@ class Seen
      */
     private static function setPersonSeenData (int $id, string $name, string $reason = 'online')
     {
-        if (stringHelper::IsNullOrWhiteSpace ($name))
-        {
-            $person = self:: getPersonSeenData ('iId', $id);
-            self::setPersonSeenData(-1, $person -> lvp_person_last_seen_id, $reason);
-            unset ($person);
-            return;
-        }
-        else
-        {
-            $person = self:: getPersonSeenData ('lvp_person_last_seen_id', $name);
-            $person -> lvp_person_last_seen_id = $name;
-            $person -> iId = $id;
-        }
-
+        $person = self:: getPersonSeenData ('lvp_person_last_seen_id', $name);
+        $person -> lvp_person_last_seen_id = $name;
+        $person -> iId = $id;
         $person -> iTime = time ();
         $person -> sReason = $reason;
         if ($person -> save ())
@@ -105,10 +94,10 @@ class Seen
             else if ($personData [3] == 'left' && $personData[4] != '')
                 self :: setPersonSeenData (-1, $personData [2], $personData [4]);
         }
-        else if (preg_match('/\[(.+)\] \*\*\* (.+) decided to play as a guest\./', $personInfo, $personData))
+        else if (preg_match('/\[(.+)\] \*\*\* (.+) decided to play as (.+) \(guest\)\./', $personInfo, $personData))
         {
-            self :: setPersonSeenData ($personData [1], '', ' (leaving)');
-            self :: setPersonSeenData ($personData [1], $personData [2]);
+            self :: setPersonSeenData ($personData [1], $personData [2], ' (leaving)');
+            self :: setPersonSeenData ($personData [1], $personData [3]);
         }
     }
 
@@ -157,7 +146,7 @@ class Seen
     /**
      * Registers the .seen-command in the commands-module for use in-game
      *
-     * @param Commands $moduleManager Object so the command can be register in the commands-module
+     * @param Commands $moduleManager Object so the command can be registered in the commands-module
      */
     public static function addSeenCommand (Commands $moduleManager)
     {

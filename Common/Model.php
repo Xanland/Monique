@@ -113,7 +113,7 @@ class Model
     {
         $sQuery = "select *
                    from " . $this->_sTable . "
-                   where " . $this->_sTable . "." . $this->_sIdColumn . " like :sId;";
+                   where " . $this->_sTable . "." . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin;";
         //echo str_replace (':sId', $this -> _sId, $sQuery);
 
         try
@@ -168,7 +168,7 @@ class Model
             {
                 $sQuery = "update " . $this->_sTable . "
                            set " . $sVarName . " = :sVarValue
-                           where " . $this->_sIdColumn . " like :sId;";
+                           where " . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin;";
             }
             //echo str_replace (array (':sVarValue', ':sId'), array ($sVarValue, $this -> _sId), $sQuery) . PHP_EOL;
 
@@ -243,7 +243,7 @@ class Model
     public function delete ()
     {
         $sQuery = "delete from `" . $this -> _sTable . "`
-                   where `" . $this -> _sIdColumn . "` = :sId;";
+                   where `" . $this -> _sIdColumn . "` = CONVERT(:sId USING utf8) COLLATE utf8_bin;";
 
         try
         {
@@ -283,7 +283,7 @@ class Model
                    from " . $this->_sTable . " ";
         if (isset($this->_sId))
         {
-            $sQuery .= "where " . $this->_sIdColumn . " like :sId";
+            $sQuery .= "where " . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin";
         }
         $sQuery .= ";";
 
