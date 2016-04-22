@@ -96,7 +96,7 @@ class Seen
         }
         else if (preg_match('/\[(.+)\] \*\*\* (.+) decided to play as (.+) \(guest\)\./', $personInfo, $personData))
         {
-            self :: setPersonSeenData ($personData [1], $personData [2], ' (leaving)');
+            self :: setPersonSeenData (-1, $personData [2], ' (leaving)');
             self :: setPersonSeenData ($personData [1], $personData [3]);
         }
     }
