@@ -109,7 +109,7 @@ class QuoteDevice
                 trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
         }
 
-        if (strstr ($sMessage, 'Monique') && !strstr ($sMessage, 'Monique:') && file_get_contents (self :: $m_sMqdFileName) != '')
+        if (strstr (strtolower ($sMessage), 'monique') && !strstr (strtolower ($sMessage), 'monique:') && file_get_contents (self :: $m_sMqdFileName) != '')
         {
             self :: sendRandomMessage ($pBot);
         }

@@ -108,6 +108,8 @@ class Seen
     {
         $oApi           = new LVPQueryApi();
         $aIngamePlayers = $oApi -> getDetailedPlayers ();
+        if (count ($aIngamePlayers) < 1)
+            return;
 
         $amountOfPlayersSynced = 0;
         $oSeenData = self :: getPersonSeenData('lvp_person_last_seen_id', '%');
