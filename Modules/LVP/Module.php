@@ -131,7 +131,12 @@ class LVP extends \ModuleBase
         $aNicknames = explode (' ', NuwaniSisters :: cleanNicknameStringFromRights ($sNicknames));
 
         if ($sChannel == self :: ECHO_CHANNEL)
-            NuwaniSisters :: setUsersOnlineInChannel ($aNicknames);
+        {
+            if (!in_array(NuwaniSisters::MASTER_BOT_NAME, $aNicknames))
+                $pBot -> send ('PRIVMSG #xanland.logging :Nuwani - ' . date ('d-m-Y H:i:s'));
+
+            NuwaniSisters:: setUsersOnlineInChannel ($aNicknames);
+        }
     }
 
     public function onChannelJoin (Bot $pBot, $sChannel, $sNickname)

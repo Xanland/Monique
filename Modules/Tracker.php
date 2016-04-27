@@ -256,7 +256,7 @@ class Tracker extends ModuleBase
 
     public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
-        if ($sMessage [0] != '!' || substr ($sNickname, 0, 7) != 'Xanland')
+        if ($sMessage [0] != '!' || (substr ($sNickname, 0, 7) != 'Xanland' || substr ($sNickname, 0, 7) != 'Xander'))
         {
             return;
         }
