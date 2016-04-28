@@ -69,6 +69,7 @@ class LVP extends \ModuleBase
         Seen :: addSeenCommand ($moduleManager);
         NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
         QuoteDevice :: addMqdCommands($moduleManager);
+        LVP :: add8ballCommand ($moduleManager);
     }
 
     /**
@@ -162,5 +163,51 @@ class LVP extends \ModuleBase
     public function onQuit (Bot $pBot, $sNickname, $sReason)
     {
         $this -> sendNamesCommand ($pBot, self :: ECHO_CHANNEL);
+    }
+
+    public static function add8ballCommand (Commands $moduleManager)
+    {
+        $moduleManager -> registerCommand (new \ Command ('.8ball',
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
+            {
+                if (substr ($sMessage, -1) != '?')
+                {
+                    echo '!msg * Absurdity: Yours truly cordially beseeches thee to endow thine enquiry.';
+                    return;
+                }
+
+                // An array with the traditional old and new answers.
+                $a_sAnswers = array
+                (
+                    'It is certain!',
+                    'It is decidedly so!',
+                    'Without a doubt!',
+                    'Yes, definitely!',
+                    'You may rely on it!',
+                    'As I see it, yes!',
+                    'Most likely!',
+                    'Outlook good!',
+                    'Yes!',
+                    'Signs point to yes!',
+
+                    'Reply hazy try again.',
+                    'Ask again later.',
+                    'Better not tell you now.',
+                    'Cannot predict now.',
+                    'Concentrate and ask again.',
+                    'Maybe.',
+
+                    'Don\'t count on it!',
+                    'My reply is no!',
+                    'My sources say no!',
+                    'Outlook not so good!',
+                    'Very doubtful!',
+                    'No!'
+                );
+                $sAnswer = $a_sAnswers[mt_rand(0, count($a_sAnswers) - 1)];
+
+                echo '!msg ' . $sNickname . ': ' . $sAnswer;
+            }
+        ));
     }
 }
