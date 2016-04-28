@@ -114,46 +114,50 @@ class NuwaniSisters
             }
         ));
 
-//        $moduleManager -> registerCommand (new \ Command ('getid',
-//            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
-//            {
-//                if (! \LVP\NuwaniSisters :: isMasterBotAvailable ()
-//                    && (strtolower ($sChannel) == '#xanland.logging' || strtolower ($sChannel) == '#lvp.echo'))
-//                {
-//                    if (!isset ($aParams[0]))
-//                    {
-//                        echo '!getid [nickname] - 4No information about status and/or level available!';
-//                        return \ Command :: OUTPUT_USAGE;
-//                    }
-//                    else
-//                    {
-//                        $oMatchingPlayers = new \Nuwani\Model ('lvp_person_last_seen', 'lvp_person_last_seen_id', '%' . $aParams [0] . '%');
-//                        print_r ($oMatchingPlayers);
-//                        if ($oMatchingPlayers -> lvp_person_last_seen_id === null)
-//                            echo 'No online players found matching "' . $aParams [0] . '". - 4No information about status and/or level available!';
-//                        else
-//                        {
-//                            $oMatchingPlayers = $oMatchingPlayers -> getAll ();
-//                            $sEcho = 'Online players found (' . count ($oMatchingPlayers) . '): ';
-//
-//                            foreach ($oMatchingPlayers as $oPlayer)
-//                            {
-//                                if ($oPlayer -> sReason == 'online')
-//                                    $sEcho .= $oPlayer -> lvp_person_last_seen_id . ' (ID: ' . $oPlayer -> iId . '), ';
-//                            }
-//
-//                            $sEcho = substr ($sEcho, 0, -2);
-//                            $sEcho .= ' - 4No information about status and/or level available!';
-//
-//                            // 512 (max IRC message length) - 2 (\r\n) - 50 (max channel name) - 10 (PRIVMSG part + safety) = 450
-//                            echo wordwrap ($sEcho, 450, PHP_EOL);
-//                        }
-//
-//                        return \ Command :: OUTPUT_INFO;
-//                    }
-//                }
-//            }
-//        ));
+        $moduleManager -> registerCommand (new \ Command ('getid',
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
+            {
+                if (! \LVP\NuwaniSisters :: isMasterBotAvailable ()
+                    && (strtolower ($sChannel) == '#lvp' || strtolower ($sChannel) == '#lvp.echo'))
+                {
+                    if (!isset ($aParams[0]))
+                    {
+                        echo '!getid [nickname] - 4No information about status and/or level available!';
+                        return \ Command :: OUTPUT_USAGE;
+                    }
+                    else
+                    {
+                        $oMatchingPlayers = new Model ('lvp_person_last_seen', 'lvp_person_last_seen_id', '%' . $aParams [0] . '%');
+                        if ($oMatchingPlayers -> lvp_person_last_seen_id === null)
+                            echo 'No online players found matching "' . $aParams [0] . '". - 4No information about status and/or level available!';
+                        else
+                        {
+                            $oMatchingPlayers = $oMatchingPlayers -> getAll ();
+                            $sEcho = 'Online players found (%count($oMatchingPlayers)%): ';
+
+                            $i = 0;
+                            foreach ($oMatchingPlayers as $oPlayer)
+                            {
+                                if ($oPlayer -> sReason == 'online')
+                                {
+                                    $sEcho .= $oPlayer -> lvp_person_last_seen_id . ' (ID: ' . $oPlayer -> iId . '), ';
+                                    $i++;
+                                }
+                            }
+
+                            $sEcho = str_replace('%count($oMatchingPlayers)%', $i, $sEcho);
+                            $sEcho = substr ($sEcho, 0, -2);
+                            $sEcho .= ' - 4No information about status and/or level available!';
+
+                            // 512 (max IRC message length) - 2 (\r\n) - 50 (max channel name) - 10 (PRIVMSG part + safety) = 450
+                            echo wordwrap ($sEcho, 450, PHP_EOL);
+                        }
+
+                        return \ Command :: OUTPUT_INFO;
+                    }
+                }
+            }
+        ));
     }
 
     public static function cleanNicknameStringFromRights ($sNicknames)
