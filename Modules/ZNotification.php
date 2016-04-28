@@ -100,72 +100,50 @@ class ZNotification extends ModuleBase
     private function registerTellCommand()
     {
         $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
-        $a_sCommandTriggers = [self :: NOTIFICATION_COMMAND_NAME, '.memo'];
-        foreach ($a_sCommandTriggers as $commandName)
-        {
-            $moduleManager -> registerCommand (new \ Command ($commandName,
-                function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage) use ($commandName)
+        $moduleManager -> registerCommand (new \ Command (self :: NOTIFICATION_COMMAND_NAME,
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage) use ($commandName)
+            {
+
+                if (stringHelper::IsNullOrWhiteSpace($sMessage))
                 {
-                    $bIngame = $commandName [0] == '.';
-                    $colorStripper = function (string $text) use ($bIngame)
-                    {
-                        if ($bIngame)
-                            return Util::stripFormat('!msg ' . $text);
-
-                        return $text;
-                    };
-
-                    if ($bIngame)
-                    {
-                        $onlineUser = new Model('lvp_person_last_seen', 'lvp_person_last_seen_id', $sNickname);
-                        if ($onlineUser -> sReason != 'online')
-                            return;
-                    }
-
-                    if (stringHelper::IsNullOrWhiteSpace($sMessage))
-                    {
-                        echo $colorStripper('7* Usage: nickname message');
-                        return;
-                    }
-
-                    list ($sReceiver, $sNotification) = explode (' ', $sMessage, 2);
-                    if (strtolower($sReceiver) == strtolower($sNickname))
-                    {
-                        echo $colorStripper('10* Info: You cannot send notifications to yourself.');
-                        return;
-                    }
-
-                    $oNotification = new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $sReceiver);
-                    if (count($oNotification->getAll()) >= self :: NOTIFICATION_MESSAGE_LIMIT)
-                    {
-                        echo $colorStripper('10* Info: The message could not be stored, because there are already ' .
-                            self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $sReceiver);
-                        return;
-                    }
-
-                    $oNotification = new Model(self :: NOTIFICATION_TABLE, 'iTimestamp', time());
-                    $oNotification -> sReceiver = $sReceiver;
-                    $oNotification -> sSender = $sNickname;
-                    $oNotification -> sMessage = $sNotification;
-                    $oNotification -> iTimestamp = time ();
-                    if(!$bIngame)
-                    {
-                        $oNotification -> sNetwork = $pBot ['Network'];
-                        $oNotification -> sChannel = $sChannel;
-                    }
-
-                    if ($oNotification -> save())
-                    {
-                        $sReceiver = strtolower($oNotification -> sReceiver);
-                        if (!in_array($sReceiver, $this->notifiedUsers))
-                            $this->notifiedUsers[] = $sReceiver;
-
-                        echo $colorStripper('Sure ' . $sNickname . '!');
-                    }
+                    echo '7* Usage: nickname message';
                     return;
                 }
-            ));
-        }
+
+                list ($sReceiver, $sNotification) = explode (' ', $sMessage, 2);
+                if (strtolower($sReceiver) == strtolower($sNickname))
+                {
+                    echo '10* Info: You cannot send notifications to yourself.';
+                    return;
+                }
+
+                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $sReceiver);
+                if (count($oNotification->getAll()) >= self :: NOTIFICATION_MESSAGE_LIMIT)
+                {
+                    echo '10* Info: The message could not be stored, because there are already ' .
+                        self :: NOTIFICATION_MESSAGE_LIMIT . ' messages waiting for ' . $sReceiver;
+                    return;
+                }
+
+                $oNotification = new Model(self :: NOTIFICATION_TABLE, 'iTimestamp', time());
+                $oNotification -> sReceiver = $sReceiver;
+                $oNotification -> sSender = $sNickname;
+                $oNotification -> sMessage = $sNotification;
+                $oNotification -> iTimestamp = time ();
+                $oNotification -> sNetwork = $pBot ['Network'];
+                $oNotification -> sChannel = $sChannel;
+
+                if ($oNotification -> save())
+                {
+                    $sReceiver = strtolower($oNotification -> sReceiver);
+                    if (!in_array($sReceiver, $this->notifiedUsers))
+                        $this->notifiedUsers[] = $sReceiver;
+
+                    echo 'Sure ' . $sNickname . '!';
+                }
+                return;
+            }
+        ));
     }
 
     /**
@@ -186,51 +164,23 @@ class ZNotification extends ModuleBase
          * which requires an easy lookup in the local notifiedUsers array.
          */
 
-        $bIngame = false;
-        $aParams = explode(' ', Util::stripFormat($message));
-        if ((strpos($aParams[0], '[') !== false && strpos($aParams[0], ']') !== false) && strpos($aParams[1], ':')
-            !== false)
-        {
-            $bIngame = true;
-            $nickname = trim($aParams[1], ':');
-        }
-
         $loweredNickname  = strtolower ($nickname);
 
         if (in_array($loweredNickname, $this->notifiedUsers))
         {
             foreach((new Model(self :: NOTIFICATION_TABLE, 'sReceiver', $nickname))->getAll() as $oNotification)
             {
-                if (!$bIngame)
-                {
-                    if ($oNotification->sNetwork != $bot ['Network'])
-                        continue;
+                if ($oNotification->sNetwork != $bot ['Network'])
+                    continue;
 
-                    if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification->sChannel != $channel)
-                        continue;
-                }
-                else
-                {
-                    if (!stringHelper::IsNullOrWhiteSpace($oNotification -> sNetwork) &&
-                        !stringHelper::IsNullOrWhiteSpace($oNotification -> sChannel))
-                        continue;
-                }
+                if (self :: NOTIFICATION_NETWORK_WIDE === false && $oNotification->sChannel != $channel)
+                    continue;
 
                 $timeDifference = $this -> formatNotificationInterval ($oNotification -> iTimestamp);
                 $notificationMessage = $nickname . ', ' . $oNotification -> sSender . ' said: ' .
                     $oNotification -> sMessage . ' 15(' . $timeDifference . ')';
 
-                if($bIngame)
-                {
-                    $notificationMessage = Util::stripFormat ('!msg ' . $notificationMessage);
-                }
-
                 $bot -> send ('PRIVMSG ' . $channel . ' :' . $notificationMessage);
-                if($bIngame)
-                {
-                    $bot -> send ('PRIVMSG ' . $channel . ' :!msg (use .memo to send a message back)');
-                }
-
                 $oNotification -> delete();
 
                 $key = array_search($loweredNickname, $this->notifiedUsers);
@@ -264,7 +214,7 @@ class ZNotification extends ModuleBase
             return $value == 1 ? $word : $word . 's';
         };
 
-        $intervalChunks = array ();
+        $format = array ();
         if ($interval -> y !== 0) // years
         {
             $format [] = '%y ' . $addPlural ($interval -> y, 'year');
@@ -280,12 +230,12 @@ class ZNotification extends ModuleBase
             $format [] = '%d ' . $addPlural ($interval -> d, 'day');
         }
 
-        if ($interval -> h !== 0) // hours
+        if ($interval ->h !== 0) // hours
         {
             $format [] = '%h ' . $addPlural ($interval -> h, 'hour');
         }
 
-        if ($interval -> i !== 0) // minutes
+        if ($interval ->i !== 0) // minutes
         {
             $format [] = '%i ' . $addPlural ($interval -> i, 'minute');
         }

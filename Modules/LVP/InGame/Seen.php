@@ -155,7 +155,7 @@ class Seen
         $moduleManager -> registerCommand (new \ Command ('.seen',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if (stringHelper::IsNullOrWhiteSpace($aParams [0]))
+                if (stringHelper::IsNullOrWhiteSpace($aParams [0]) || count ($aParams) != 1)
                     echo '!msg * Usage: .seen <username>';
                 else
                 {
