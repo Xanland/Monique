@@ -101,7 +101,7 @@ class ZNotification extends ModuleBase
     {
         $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
         $moduleManager -> registerCommand (new \ Command (self :: NOTIFICATION_COMMAND_NAME,
-            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage) use ($commandName)
+            function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
 
                 if (stringHelper::IsNullOrWhiteSpace($sMessage))
