@@ -207,6 +207,7 @@ class LVP extends \ModuleBase
                 $sAnswer = $a_sAnswers[mt_rand(0, count($a_sAnswers) - 1)];
 
                 echo '!msg ' . $sNickname . ': ' . $sAnswer;
+                return;
             }
         ));
     }
