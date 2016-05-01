@@ -3,7 +3,7 @@ namespace Nuwani\Common;
 /**
  * Helper class for strings with methods behaving like the C# string-methods.
  */
-class stringHelper
+class stringH
 {
     /**
      * Replaces placeholders in given $stringToFormat with string from second and latter parameters.
@@ -36,7 +36,7 @@ class stringHelper
      */
     private static function IsNullOrEmpty ($stringToCheck)
     {
-        return is_null ($stringToCheck) || empty($stringToCheck);
+        return is_null ($stringToCheck) || empty ($stringToCheck);
     }
 
     /**
@@ -46,8 +46,8 @@ class stringHelper
      *
      * @return bool If the string is empty or only contains spaces.
      */
-    public static function IsNullOrWhiteSpace ($stringToCheck)
+    public static function IsNullOrWhiteSpace ($stringToCheck = null) : \bool
     {
-        return self::IsNullOrEmpty($stringToCheck) || trim($stringToCheck) === 0;
+        return self :: IsNullOrEmpty ($stringToCheck) || trim ($stringToCheck) === 0;
     }
 }

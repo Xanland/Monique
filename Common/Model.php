@@ -23,6 +23,8 @@
 
 namespace Nuwani;
 
+use Nuwani\Common\stringH;
+
 if (!class_exists ('\PDO'))
 {
     /** PDO is not required by the bot's core. * */
@@ -96,7 +98,7 @@ class Model
 
         $this->_sId = $sId;
 
-        if ($connectToDatabase)
+        if ($connectToDatabase && !stringH :: IsNullOrWhiteSpace($sId))
         {
             $this->connectToDatabase ();
 

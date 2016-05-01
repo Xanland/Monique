@@ -30,7 +30,7 @@
 namespace LVP\InGame;
 use Commands;
 use Nuwani\Bot;
-use Nuwani\Common\stringHelper;
+use Nuwani\Common\stringH;
 use Nuwani\Timer;
 
 class QuoteDevice
@@ -58,7 +58,7 @@ class QuoteDevice
     {
         self :: $m_aQuoteDeviceFileContent = array ();
 
-        $sPathToLogFile = stringHelper :: Format ('Data/Logs/{0}-{1}-{2}-#lvp.echo.log', date ('Y'), date ('m'), date ('d'));
+        $sPathToLogFile = stringH :: Format ('Data/Logs/{0}-{1}-{2}-#lvp.echo.log', date ('Y'), date ('m'), date ('d'));
 
         if (file_exists ($sPathToLogFile))
         {
@@ -81,23 +81,23 @@ class QuoteDevice
         $aNewParameters = explode (' ', \Util :: stripFormat($sMessage . ' '));
         unset ($aNewParameters [0], $aNewParameters [1]);
         $sNewMessage = implode(' ', $aNewParameters);
-        $sPathToLogFile = stringHelper :: Format ('Data/Logs/{0}-{1}-{2}-#lvp.echo.log', date ('Y'), date ('m'), date ('d'));
+        $sPathToLogFile = stringH :: Format ('Data/Logs/{0}-{1}-{2}-#lvp.echo.log', date ('Y'), date ('m'), date ('d'));
 
         if (strstr ($aParameters [0], '[') !== false && strstr ($aParameters [0], ']') !== false)
         {
             if (strstr ($aParameters [1], ':') !== false)
             {
-                file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
+                file_put_contents ($sPathToLogFile, stringH :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
                     trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
             }
             elseif (strstr ($aParameters [1], ':') === false && strstr ($aParameters [1], '***') === false)
             {
-                file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] * {1} {2}' . PHP_EOL, date('H:i:s'),
+                file_put_contents ($sPathToLogFile, stringH :: Format ('[{0}] * {1} {2}' . PHP_EOL, date('H:i:s'),
                     trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
             }
             elseif ($aParameters [1] == '***' && strstr ($aParameters [6], 'kicked') !== false)
             {
-                file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] *** {1} was kicked by {2}' . PHP_EOL,
+                file_put_contents ($sPathToLogFile, stringH :: Format ('[{0}] *** {1} was kicked by {2}' . PHP_EOL,
                     date('H:i:s'), $aParameters [2], 'LasVenturasPlayground'), FILE_APPEND);
             }
         }
@@ -105,7 +105,7 @@ class QuoteDevice
         {
             unset ($aNewParameters [2], $aNewParameters [3]);
             $sNewMessage = implode(' ', $aNewParameters);
-            file_put_contents ($sPathToLogFile, stringHelper :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
+            file_put_contents ($sPathToLogFile, stringH :: Format ('[{0}] <{1}> {2}' . PHP_EOL, date('H:i:s'),
                 trim ($aParameters [1], ':'), $sNewMessage), FILE_APPEND);
         }
 

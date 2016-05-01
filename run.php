@@ -59,7 +59,7 @@ require 'Sources/Socket.php';
 require 'Sources/Timer.php';
 require 'Sources/Bot.php';
 require 'Common/Model.php';
-require 'Common/stringHelper.php';
+require 'Common/stringH.php';
 require 'config.php';
 
 if ($_SERVER ['argc'] >= 1 && (isset ($_SERVER ['argv'] [1]) && $_SERVER ['argv'] [1] == 'restart')) {

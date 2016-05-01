@@ -33,7 +33,7 @@ use Commands;
 use LVP;
 use LVP\LVPQueryApi;
 //use Nuwani\BotManager;
-use Nuwani\Common\stringHelper;
+use Nuwani\Common\stringH;
 use Nuwani\Model;
 
 class Seen
@@ -155,22 +155,22 @@ class Seen
         $moduleManager -> registerCommand (new \ Command ('.seen',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if (stringHelper::IsNullOrWhiteSpace($aParams [0]) || count ($aParams) != 1)
+                if (stringH::IsNullOrWhiteSpace($aParams [0]) || count ($aParams) != 1)
                     echo '!msg * Usage: .seen <username>';
                 else
                 {
                     $oLastSeenPerson = self :: getPersonSeenData ('lvp_person_last_seen_id', $aParams[0]);
-                    if (!stringHelper::IsNullOrWhiteSpace($oLastSeenPerson -> lvp_person_last_seen_id))
+                    if (!stringH::IsNullOrWhiteSpace($oLastSeenPerson -> lvp_person_last_seen_id))
                     {
                         if ($oLastSeenPerson -> sReason != 'online')
                         {
-                            echo stringHelper::Format ('!msg {0} was last seen online {1}{2}.',
+                            echo stringH::Format ('!msg {0} was last seen online {1}{2}.',
                                 $oLastSeenPerson -> lvp_person_last_seen_id, date ('H:i:s @ d-m-Y', $oLastSeenPerson -> iTime),
                                 $oLastSeenPerson -> sReason);
                         }
                         else
                         {
-                            echo stringHelper::Format ('!msg {0} is already online for {1}.',
+                            echo stringH::Format ('!msg {0} is already online for {1}.',
                                 $oLastSeenPerson -> lvp_person_last_seen_id,
                                 \ Util:: formatTime (time () - $oLastSeenPerson -> iTime));
                         }

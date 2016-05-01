@@ -22,7 +22,7 @@
  */
 
 use Nuwani\Bot;
-use Nuwani\Common\stringHelper;
+use Nuwani\Common\stringH;
 use Nuwani\Model;
 use Nuwani\ModuleManager;
 
@@ -104,7 +104,7 @@ class ZNotification extends ModuleBase
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
 
-                if (stringHelper::IsNullOrWhiteSpace($sMessage))
+                if (stringH::IsNullOrWhiteSpace($sMessage))
                 {
                     echo '7* Usage: nickname message';
                     return;
