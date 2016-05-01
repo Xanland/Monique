@@ -67,9 +67,9 @@ class LVP extends \ModuleBase
     {
         $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
         Seen :: addSeenCommand ($moduleManager);
-        NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
+        //NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
         QuoteDevice :: addMqdCommands($moduleManager);
-        LVP :: add8ballCommand ($moduleManager);
+        self :: add8ballCommand ($moduleManager);
     }
 
     /**
