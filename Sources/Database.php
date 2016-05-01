@@ -30,85 +30,83 @@ namespace Nuwani;
 
 if (!class_exists ('\PDO'))
 {
-        /** PDO is not required by the bot's core. **/
-        return;
+    /** PDO is not required by the bot's core. **/
+    return;
 }
 
 class Database extends \ PDO
 {
-        /**
-         * This property contains the instance of the active MySQLi instance.
-         * By utilizing Singleton here we avoid having MySQL connections for
-         * every single requests, but rather just when they're needed.
-         *
-         * @var string
-         */
+    /**
+     * This property contains the instance of the active MySQLi instance.
+     * By utilizing Singleton here we avoid having MySQL connections for
+     * every single requests, but rather just when they're needed.
+     *
+     * @var string
+     */
 
-        private static $m_sInstance;
+    private static $m_sInstance;
 
-        /**
-         * This property indicates when the current connection has to
-         * be killed, and restarted to clear up buffers and all.
-         *
-         * @var integer
-         */
+    /**
+     * This property indicates when the current connection has to
+     * be killed, and restarted to clear up buffers and all.
+     *
+     * @var integer
+     */
 
-        private static $m_nRestartTime;
+    private static $m_nRestartTime;
 
-        /**
-         * The constructor will connect to the configured MySQL database.
-         */
+    /**
+     * The constructor will connect to the configured MySQL database.
+     */
 
-        public function __construct ($singleton = false)
+    public function __construct ($singleton = false)
+    {
+        if ($singleton === false)
+            throw new \Exception("This class should be used as singleton, please use Database::getInstance() instead of new Database()!");
+
+        $aConfiguration = Configuration :: getInstance () -> get ('MySQL');
+
+        parent :: __construct
+        (
+            $aConfiguration ['dsn'],
+            $aConfiguration ['username'],
+            $aConfiguration ['password']
+        );
+    }
+
+    /**
+     * Creates a new connection with the database or returns the active
+     * one if there is one, so no double connections for anyone. Returns
+     * null if no credentials have been configured, or PDO has been
+     * disabled.
+     *
+     * @return Database|null
+     */
+
+    public static function getInstance ()
+    {
+        if (self :: $m_sInstance == null || self :: $m_nRestartTime < time ())
         {
-                if ($singleton === false)
-                        throw new \Exception("This class should be used as singleton, please use Database::getInstance() instead of new Database()!");
+            if (self :: $m_sInstance != null)
+            {
+                self :: $m_sInstance = null;
+            }
 
-                $aConfiguration = Configuration :: getInstance () -> get ('MySQL');
+            self :: $m_sInstance = null;
 
-                parent :: __construct
-                (
-                        $aConfiguration ['dsn'],
-                        $aConfiguration ['username'],
-                        $aConfiguration ['password']
-                );
+            $aConfiguration = Configuration :: getInstance () -> get ('MySQL');
+
+            if (empty ($aConfiguration) ||
+                (isset ($aConfiguration ['enabled']) && $aConfiguration ['enabled'] === false))
+            {
+                /** No configuration found or PDO is not wanted, bail out. **/
+                return null;
+            }
+
+            self :: $m_sInstance    = new self (true);
+            self :: $m_nRestartTime = $aConfiguration ['restart'] + time ();
         }
 
-        /**
-         * Creates a new connection with the database or returns the active
-         * one if there is one, so no double connections for anyone. Returns
-         * null if no credentials have been configured, or PDO has been
-         * disabled.
-         *
-         * @return Database|null
-         */
-
-        public static function getInstance ()
-        {
-                if (self :: $m_sInstance == null || self :: $m_nRestartTime < time ())
-                {
-                        if (self :: $m_sInstance != null)
-                        {
-                                self :: $m_sInstance = null;
-                        }
-
-                        self :: $m_sInstance = null;
-
-                        $aConfiguration = Configuration :: getInstance () -> get ('MySQL');
-
-                        if (empty ($aConfiguration) ||
-                            (isset ($aConfiguration ['enabled']) && $aConfiguration ['enabled'] === false))
-                        {
-                                /** No configuration found or PDO is not wanted, bail out. **/
-                                return null;
-                        }
-
-                        self :: $m_sInstance    = new self (true);
-                        self :: $m_nRestartTime = $aConfiguration ['restart'] + time ();
-                }
-
-                return self :: $m_sInstance;
-        }
-};
-
-?>
+        return self :: $m_sInstance;
+    }
+}
