@@ -48,25 +48,34 @@ class Statistics extends ModuleBase
     public function __construct ()
     {
         $this -> configuration = Configuration :: getInstance ();
-        $aConfiguration = $this -> configuration -> get ('Statistics');
+        $moduleConfiguration = $this -> configuration -> get ('Statistics');
 
-        $this -> logger = new $aConfiguration['ILoggerImplementation'] ();
+        $this -> logger = new $moduleConfiguration['ILoggerImplementation'] ();
     }
 
-    public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
+    public function onChannelPrivmsg (Bot $bot, string $channel, string $nickname, string $message)
     {
-        $aMessageParts = explode (' ', $sMessage);
+        $message = Util :: stripFormat ($message);
+        $messageParts = explode (' ', $message);
 
-        if (strtolower ($sChannel) == '#lvp.echo'
-            && in_array ($sNickname, $this -> configuration -> get ('NuwaniSistersEchoBots'))
-            && (strpos ($aMessageParts [0], '[') && strpos ($aMessageParts [0], ']'))
-            && strpos ($aMessageParts [1], ':'))
+        if (strtolower ($channel) == '#lvp.echo')
         {
-            $sChannel = 'LVP In-game';
-            $sNickname = str_replace (':', '', $aMessageParts [1]);
+            if (in_array ($nickname, $this -> configuration -> get ('NuwaniSistersEchoBots'))
+                && (strpos ($messageParts [0], '[') && strpos ($messageParts [0], ']'))
+                && strpos ($messageParts [1], ':'))
+            {
+                $channel = 'LVP In-game';
+                $nickname = str_replace (':', '', $messageParts [1]);
+                $message = Util :: getPieces ($messageParts, ' ', 2);
+            }
         }
 
-        $this -> logger -> SetDetails ($sChannel, $sNickname);
+        $this -> logger -> CreateInstance ();
 
+        $this -> logger -> SetDetails ($channel, $nickname);
+        $this -> logger -> SetMessageType ('privmsg');
+        $this -> logger -> SetMessage ($message);
+
+        $this -> logger -> SaveInstance ();
     }
 }

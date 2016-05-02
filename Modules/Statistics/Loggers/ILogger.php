@@ -31,8 +31,12 @@ namespace Statistics\Loggers;
 
 interface ILogger
 {
-    public function SetDetails ($channel, $nick);
+    public function CreateInstance ();
 
-    public function SetMessageType ($messageType);
-    public function SetMessage ($message);
+    public function SetDetails (string $channel, string $nick);
+
+    public function SetMessageType (string $messageType);
+    public function SetMessage (string $message);
+
+    public function SaveInstance () : bool;
 }

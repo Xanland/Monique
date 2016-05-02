@@ -29,20 +29,37 @@
 
 namespace Statistics\Loggers;
 
+use Nuwani\Model;
+
 class DatabaseLogger implements ILogger
 {
-    public function SetDetails ($channel, $nick)
-    {
+    private $medium;
 
+    public function CreateInstance()
+    {
+        $this -> medium = new Model('irc_statistics', 'irc_statistics_id');
+        $this -> medium -> date = date ('d-m-Y');
+        $this -> medium -> time = date ('H:i:s');
     }
 
-    public function SetMessageType ($messageType)
+    public function SetDetails (string $channel, string $nick)
     {
-        // TODO: Implement SetMessageType() method.
+        $this -> medium -> channel = $channel;
+        $this -> medium -> nick = $nick;
     }
 
-    public function SetMessage ($message)
+    public function SetMessageType (string $messageType)
     {
-        // TODO: Implement SetMessage() method.
+        $this -> medium -> message_type = $messageType;
+    }
+
+    public function SetMessage (string $message)
+    {
+        $this -> medium -> message = $message;
+    }
+
+    public function SaveInstance () : bool
+    {
+        return $this -> medium -> save ();
     }
 }
