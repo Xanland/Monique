@@ -47,10 +47,11 @@ class Statistics extends ModuleBase
 
     public function __construct ()
     {
-        $this -> configuration = Configuration :: getInstance ();
-        $moduleConfiguration = $this -> configuration -> get ('Statistics');
+        $configuration = Configuration :: getInstance ();
+        $this -> configuration = $configuration -> get ('Statistics');
 
-        $this -> logger = new $moduleConfiguration['ILoggerImplementation'] ();
+
+        $this -> logger = new $this -> configuration ['ILoggerImplementation'] ();
     }
 
     public function onChannelPrivmsg (Bot $bot, string $channel, string $nickname, string $message)
@@ -60,7 +61,7 @@ class Statistics extends ModuleBase
 
         if (strtolower ($channel) == '#lvp.echo')
         {
-            if (in_array ($nickname, $this -> configuration -> get ('NuwaniSistersEchoBots'))
+            if (in_array ($nickname, $this -> configuration ['NuwaniSistersEchoBots'])
                 && (strpos ($messageParts [0], '[') && strpos ($messageParts [0], ']'))
                 && strpos ($messageParts [1], ':'))
             {
@@ -69,6 +70,21 @@ class Statistics extends ModuleBase
                 $message = Util :: getPieces ($messageParts, ' ', 2);
             }
         }
+
+        if (strtolower ($channel) == '#overdosed')
+        {
+            if (strtolower ($nickname) == 'enigma'
+                && (strpos ($messageParts [0], '[') && strpos ($messageParts [0], ']'))
+                && (strpos ($messageParts [1], '<') && strpos ($messageParts [0], '>')))
+            {
+                $channel = 'OAS MC In-game';
+                $nickname = str_replace (array ('<', '>'), '', $messageParts [1]);
+                $message = Util :: getPieces ($messageParts, ' ', 2);
+            }
+        }
+
+        if (!in_array ($channel, $this -> configuration ['Channels']))
+            return; // Not a channel we need to log...
 
         $this -> logger -> CreateInstance ();
 

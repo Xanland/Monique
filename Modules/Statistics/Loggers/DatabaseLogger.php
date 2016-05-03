@@ -60,6 +60,8 @@ class DatabaseLogger implements ILogger
 
     public function SaveInstance () : bool
     {
-        return $this -> medium -> save ();
+        //var_dump($this -> medium);
+        return false;
+        //return $this -> medium -> save ();
     }
 }
