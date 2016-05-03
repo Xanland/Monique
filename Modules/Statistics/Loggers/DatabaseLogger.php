@@ -38,7 +38,7 @@ class DatabaseLogger implements ILogger
     public function CreateInstance()
     {
         $this -> medium = new Model('irc_statistics', 'irc_statistics_id');
-        $this -> medium -> date = date ('d-m-Y');
+        $this -> medium -> date = date ('Y-m-d');
         $this -> medium -> time = date ('H:i:s');
     }
 
