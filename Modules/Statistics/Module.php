@@ -31,6 +31,7 @@ require_once 'Loggers/ILogger.php';
 require_once 'Loggers/DatabaseLogger.php';
 
 use Nuwani\Bot;
+use Nuwani\Common\stringH;
 use Nuwani\Configuration;
 
 if (!class_exists ('Model'))
@@ -50,48 +51,152 @@ class Statistics extends ModuleBase
         $configuration = Configuration :: getInstance ();
         $this -> configuration = $configuration -> get ('Statistics');
 
-
         $this -> logger = new $this -> configuration ['ILoggerImplementation'] ();
     }
 
     public function onChannelPrivmsg (Bot $bot, string $channel, string $nickname, string $message)
     {
+        if ($bot ['Nickname'] != 'Monique')
+            return;
+
         $message = Util :: stripFormat ($message);
         $messageParts = explode (' ', $message);
+        $messageType = 'privmsg';
 
-        if (strtolower ($channel) == '#lvp.echo')
-        {
-            if (in_array ($nickname, $this -> configuration ['NuwaniSistersEchoBots'])
-                && (strpos ($messageParts [0], '[') && strpos ($messageParts [0], ']'))
-                && strpos ($messageParts [1], ':'))
-            {
-                $channel = 'LVP In-game';
-                $nickname = str_replace (':', '', $messageParts [1]);
-                $message = Util :: getPieces ($messageParts, ' ', 2);
-            }
-        }
+        $this -> HandleChannelWithIngameChat ('LVP', $channel, $nickname, $message, $messageType, $messageParts);
+        $this -> HandleChannelWithIngameChat ('OAS MC', $channel, $nickname, $message, $messageType, $messageParts);
 
-        if (strtolower ($channel) == '#overdosed')
-        {
-            if (strtolower ($nickname) == 'enigma'
-                && (strpos ($messageParts [0], '[') && strpos ($messageParts [0], ']'))
-                && (strpos ($messageParts [1], '<') && strpos ($messageParts [0], '>')))
-            {
-                $channel = 'OAS MC In-game';
-                $nickname = str_replace (array ('<', '>'), '', $messageParts [1]);
-                $message = Util :: getPieces ($messageParts, ' ', 2);
-            }
-        }
-
-        if (!in_array ($channel, $this -> configuration ['Channels']))
-            return; // Not a channel we need to log...
+        if (!in_array ($channel, $this -> configuration ['Channels'])
+            || $messageType == 'nyi')
+            return; // Not a channel we need to log or not yet implemented messagetype
 
         $this -> logger -> CreateInstance ();
 
         $this -> logger -> SetDetails ($channel, $nickname);
-        $this -> logger -> SetMessageType ('privmsg');
+        $this -> logger -> SetMessageType ($messageType);
         $this -> logger -> SetMessage ($message);
 
         $this -> logger -> SaveInstance ();
+    }
+
+    public function onCTCP (Bot $bot, string $messageSource, string $nickname, string $type, string $message)
+    {
+        if ($bot ['Nickname'] != 'Monique')
+            return;
+
+        if (strtolower ($type) == 'action' && in_array ($messageSource, $this -> configuration ['Channels']))
+        {
+            $this -> logger -> CreateInstance ();
+
+            $this -> logger -> SetDetails ($messageSource, $nickname);
+            $this -> logger -> SetMessageType ('action');
+            $this -> logger -> SetMessage ($message);
+
+            $this -> logger -> SaveInstance ();
+        }
+    }
+
+    private function HandleChannelWithIngameChat (string $servername, string &$channel, string &$nickname, string &$message, string &$messageType, array $messageParts)
+    {
+        if (strtolower ($channel) == '#lvp.echo' || strtolower ($channel) == '#xanland.logging')
+        {
+            if (in_array ($nickname, $this -> configuration ['NuwaniSistersEchoBots'])
+                && $this -> IsValidEchoLine ($servername, $messageParts, $messageType))
+            {
+                $channel = $servername . ' In-game';
+                $nickname = $this -> GetNicknameFromValidEchoLine ($servername, $messageParts, $messageType);
+                $message = $this -> GetMessageFromValidEchoLine ($servername, $messageParts, $messageType);
+            }
+        }
+    }
+
+    private function IsValidEchoLine (string $servername, array $messageParts, string &$messageType) : bool
+    {
+        if ($servername == 'LVP')
+        {
+            if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false && strpos ($messageParts [1], ':') !== false)
+            {
+                $messageType = 'privmsg';
+                return true;
+            }
+
+            if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false && strpos ($messageParts [1], '***') !== false)
+            {
+                $messageType = 'nyi';
+                return true;
+            }
+
+            if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false)
+            {
+                $messageType = 'action';
+                return true;
+            }
+        }
+        else if ($servername == 'OAS MC')
+        {
+            if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false && strpos ($messageParts [1], '<') !== false && strpos ($messageParts [1], '>') !== false)
+            {
+                $messageType = 'privmsg';
+                return true;
+            }
+
+            if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false && strpos ($messageParts [0], '***') !== false)
+            {
+                $messageType = 'action';
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function GetNicknameFromValidEchoLine (string $servername, array $messageParts, string $messageType) : string
+    {
+        if ($servername == 'LVP')
+        {
+            if ($messageType == 'privmsg')
+                return str_replace (':', '', $messageParts [1]);
+
+            if ($messageType == 'action')
+            {
+                if (!stringH::IsNullOrWhiteSpace($messageParts [1]))
+                    return $messageParts [1];
+
+                return '';
+            }
+        }
+        else if ($servername == 'OAS MC')
+        {
+            if ($messageType == 'privmsg')
+                return str_replace (array ('<', '>'), '', $messageParts [1]);
+
+            if ($messageType == 'action')
+            {
+                $nickname = strstr ($messageParts [0], '***');
+                unset ($nickname[0]);
+                return $nickname;
+            }
+        }
+
+        return '';
+    }
+
+    private function GetMessageFromValidEchoLine (string $servername, array $messageParts, string $messageType) : string
+    {
+        if ($servername == 'LVP')
+        {
+            if ($messageType == 'privmsg' || $messageType == 'action')
+                return Util :: getPieces ($messageParts, ' ', 2);
+        }
+        else if ($servername == 'OAS MC')
+        {
+            if ($messageType == 'privmsg')
+                return Util :: getPieces ($messageParts, ' ', 2);
+
+            if ($messageType == 'action')
+                return Util :: getPieces ($messageParts, ' ', 1);
+        }
+
+        return '';
     }
 }
