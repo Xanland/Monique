@@ -158,13 +158,30 @@ class Model
 
         foreach ($this->_aMutableData as $sVarName => $sVarValue)
         {
-            if ($sVarValue == $this->_aLoadedData[$sVarName])
+            if ($this->_aLoadedData != null && $sVarValue == $this->_aLoadedData[$sVarName])
                 continue;
 
             if ($this->_aLoadedData == [])
             {
-                $sQuery = "insert " . $this->_sTable . " (" . $this->_sIdColumn . ")
-                           select :sVarValue; ";
+                $sQueryWithColumns = "insert into `" . $this->_sTable . "` (`" . $this->_sIdColumn . "`, ";
+                foreach ($this -> _aMutableData as $sColumn => $sValue)
+                {
+                    if ($sColumn == $this->_sIdColumn)
+                        continue;
+
+                    $sQueryWithColumns .= "`" . $sColumn . "`, ";
+                }
+                $sQuery = substr($sQueryWithColumns, 0, -2) . ')';
+
+                $sQueryWithValues = "select :sVarValue, ";
+                foreach ($this -> _aMutableData as $sColumn => $sValue)
+                {
+                    if ($sColumn == $this->_sIdColumn)
+                        continue;
+
+                    $sQueryWithValues .= ":" . $sColumn . ", ";
+                }
+                $sQuery .= substr($sQueryWithValues, 0, -2);
             }
             else
             {
@@ -184,20 +201,40 @@ class Model
                 $oStmt = $this -> _pPDO -> prepare ($sQuery);
 
                 $oStmt -> bindParam (':sVarValue', $sVarValue);
-                if ($this->_aLoadedData != [])
+                if ($this->_aLoadedData != null)
                 {
                     $oStmt->bindParam (':sId', $this -> _sId);
+                }
+                else
+                {
+                    foreach ($this -> _aMutableData as $sColumn => $sValue)
+                    {
+                        if ($sColumn == $this->_sIdColumn)
+                            continue;
+
+                        if (stringH::IsNullOrWhiteSpace($sValue))
+                            $sValue = null;
+
+                        $oStmt -> bindValue (':' . $sColumn, $sValue);
+                    }
                 }
 
                 if($oStmt->execute())
                 {
-                    $this->_aLoadedData[$sVarName] = $sVarValue;
+                    if ($this->_aLoadedData == [])
+                    {
+                        $this->fillLoadedData();
+                    }
+                    else
+                    {
+                        $this->_aLoadedData[$sVarName] = $sVarValue;
+                    }
 
-//                    if ($sVarName == $this->_sIdColumn)
-//                        $this->_sId = $sVarValue;
+                    //                    if ($sVarName == $this->_sIdColumn)
+                    //                        $this->_sId = $sVarValue;
                 }
-//                else
-//                    print_r ($oStmt->errorInfo());
+                else
+                    var_dump ($oStmt->errorInfo());
             }
             catch (\ PDOException $e)
             {
