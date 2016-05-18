@@ -133,7 +133,7 @@ class Output extends ModuleBase
                 if ($sDestination [0] != '#') // We only want channel messages;
                         return ;
 
-                $pBot -> send ('PRIVMSG #xanland.logging :[onCTCP in/by ' . $sDestination . '] * ' . $sNickname . ' ' . $sMessage );
+                $pBot -> send ('PRIVMSG #xanland.logging :[onCTCP in/by ' . $sDestination . ' (' . $sType . ')] * ' . $sNickname . ' ' . $sMessage );
         }
 
         /**
