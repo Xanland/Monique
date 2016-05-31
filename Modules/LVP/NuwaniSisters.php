@@ -38,7 +38,7 @@ class NuwaniSisters
     const MASTER_BOT_NAME = 'Nuwani';
     //const MASTER_BOT_NAME = 'LVPpropbot2';
 
-    private static $_nicknames = array();
+    public static $isMasterBotAvailable = true;
 
     public static function addNuwaniSistersCommands (Commands $moduleManager)
     {
@@ -50,7 +50,7 @@ class NuwaniSisters
             $moduleManager -> registerCommand (new \ Command ($command,
                 function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage) use ($command)
                 {
-                    if (! \LVP\NuwaniSisters :: isMasterBotAvailable () && (strtolower ($sChannel) == '#xanland.logging' ||  strtolower ($sChannel) == '#lvp.echo'))
+                    if (! \LVP\NuwaniSisters::$isMasterBotAvailable && (strtolower ($sChannel) == '#xanland.logging' ||  strtolower ($sChannel) == '#lvp.echo'))
                     {
                         echo 'Due to ' . \LVP\NuwaniSisters :: MASTER_BOT_NAME . ' (main-bot) being offline, no commands can be handled until it is restarted. You can request a restart in #LVP (or #LVP.Dev).';
                         return \ Command :: OUTPUT_ERROR;
@@ -62,7 +62,7 @@ class NuwaniSisters
         $moduleManager -> registerCommand (new \ Command ('players',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if (! \LVP\NuwaniSisters :: isMasterBotAvailable ()
+                if (! \LVP\NuwaniSisters::$isMasterBotAvailable
                     && (strtolower ($sChannel) == '#lvp' || strtolower ($sChannel) == '#lvp.echo'))
                 {
                     if (!isset ($aParams [0]))
@@ -92,7 +92,7 @@ class NuwaniSisters
         $moduleManager -> registerCommand (new \ Command ('getname',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if (! \LVP\NuwaniSisters :: isMasterBotAvailable ()
+                if (! \LVP\NuwaniSisters::$isMasterBotAvailable
                     && (strtolower ($sChannel) == '#lvp' || strtolower ($sChannel) == '#lvp.echo'))
                 {
                     if (!isset ($aParams[0]))
@@ -117,7 +117,7 @@ class NuwaniSisters
         $moduleManager -> registerCommand (new \ Command ('getid',
             function ($pBot, $sDestination, $sChannel, $sNickname, $aParams, $sMessage)
             {
-                if (! \LVP\NuwaniSisters :: isMasterBotAvailable ()
+                if (! \LVP\NuwaniSisters::$isMasterBotAvailable
                     && (strtolower ($sChannel) == '#lvp' || strtolower ($sChannel) == '#lvp.echo'))
                 {
                     if (!isset ($aParams[0]))
@@ -158,29 +158,5 @@ class NuwaniSisters
                 }
             }
         ));
-    }
-
-    public static function cleanNicknameStringFromRights ($sNicknames)
-    {
-        $rightsArray = array ('~'
-                             ,'&'
-                             ,'@'
-                             ,'%'
-                             ,'+');
-
-        return str_replace ($rightsArray, '', $sNicknames);
-    }
-
-    public static function setUsersOnlineInChannel ($aNicknames)
-    {
-        self :: $_nicknames = $aNicknames;
-    }
-
-    public static function isMasterBotAvailable ()
-    {
-        if (!in_array (self :: MASTER_BOT_NAME,  self :: $_nicknames))
-            return false;
-
-        return true;
     }
 }

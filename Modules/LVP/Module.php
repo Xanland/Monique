@@ -67,7 +67,7 @@ class LVP extends \ModuleBase
     {
         $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
         Seen :: addSeenCommand ($moduleManager);
-        //NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
+        NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
         QuoteDevice :: addMqdCommands($moduleManager);
         self :: add8ballCommand ($moduleManager);
     }
@@ -119,50 +119,39 @@ class LVP extends \ModuleBase
         }
     }
 
-    private function sendNamesCommand (Bot $pBot, $sChannel)
-    {
-        if (strtolower ($sChannel) == self :: ECHO_CHANNEL)
-            $pBot -> send ('NAMES ' . self :: ECHO_CHANNEL);
-    }
-
-    public function onChannelNames (Bot $pBot, $sChannel, $sNicknames)
-    {
-        $sChannel = strtolower ($sChannel);
-
-        $aNicknames = explode (' ', NuwaniSisters :: cleanNicknameStringFromRights ($sNicknames));
-
-        if ($sChannel == self :: ECHO_CHANNEL)
-        {
-            if (!in_array(NuwaniSisters::MASTER_BOT_NAME, $aNicknames))
-                $pBot -> send ('PRIVMSG #xanland.logging :Nuwani - ' . date ('d-m-Y H:i:s'));
-
-            NuwaniSisters:: setUsersOnlineInChannel ($aNicknames);
-        }
-    }
-
     public function onChannelJoin (Bot $pBot, $sChannel, $sNickname)
     {
-        $this -> sendNamesCommand ($pBot, $sChannel);
+        if (strtolower ($sChannel) == self :: ECHO_CHANNEL
+            && strtolower ($sNickname) == strtolower (NuwaniSisters::MASTER_BOT_NAME))
+        {
+            NuwaniSisters::$isMasterBotAvailable = true;
+        }
     }
 
     public function onChannelPart (Bot $pBot, $sChannel, $sNickname, $sReason)
     {
-        $this -> sendNamesCommand ($pBot, $sChannel);
+        if (strtolower ($sChannel) == self :: ECHO_CHANNEL
+            && strtolower ($sNickname) == strtolower (NuwaniSisters::MASTER_BOT_NAME))
+        {
+            NuwaniSisters::$isMasterBotAvailable = false;
+        }
     }
 
     public function onChannelKick (Bot $pBot, $sChannel, $sKicked, $sKicker, $sReason)
     {
-        $this -> sendNamesCommand ($pBot, $sChannel);
-    }
-
-    public function onChangeNick (Bot $pBot, $sNickname, $sNewNick)
-    {
-        $this -> sendNamesCommand ($pBot, self :: ECHO_CHANNEL);
+        if (strtolower ($sChannel) == self :: ECHO_CHANNEL
+            && strtolower ($sKicked) == strtolower (NuwaniSisters::MASTER_BOT_NAME))
+        {
+            NuwaniSisters::$isMasterBotAvailable = false;
+        }
     }
 
     public function onQuit (Bot $pBot, $sNickname, $sReason)
     {
-        $this -> sendNamesCommand ($pBot, self :: ECHO_CHANNEL);
+        if (strtolower ($sNickname) == strtolower (NuwaniSisters::MASTER_BOT_NAME))
+        {
+            NuwaniSisters::$isMasterBotAvailable = false;
+        }
     }
 
     public static function add8ballCommand (Commands $moduleManager)
@@ -190,7 +179,7 @@ class LVP extends \ModuleBase
                     'Yes!',
                     'Signs point to yes!',
 
-                    'Reply hazy try again.',
+                    'Reply hazy, try again.',
                     'Ask again later.',
                     'Better not tell you now.',
                     'Cannot predict now.',
