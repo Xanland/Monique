@@ -29,7 +29,7 @@
 
 namespace Statistics\Loggers;
 
-use Nuwani\Model;
+use LVPModel;
 
 class DatabaseLogger implements ILogger
 {
@@ -37,7 +37,7 @@ class DatabaseLogger implements ILogger
 
     public function CreateInstance()
     {
-        $this -> medium = new Model('irc_statistics', 'irc_statistics_id');
+        $this -> medium = new LVPModel('irc_statistics', 'irc_statistics_id');
         $this -> medium -> date = date ('Y-m-d');
         $this -> medium -> time = date ('H:i:s');
     }

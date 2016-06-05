@@ -28,13 +28,14 @@
  */
 
 require_once 'Loggers/ILogger.php';
+require_once 'LVPModel.php';
 require_once 'Loggers/DatabaseLogger.php';
 
 use Nuwani\Bot;
 use Nuwani\Common\stringH;
 use Nuwani\Configuration;
 
-if (!class_exists ('Model'))
+if (!class_exists ('LVPModel'))
 {
     // Class is needed for the Statistics-module to work
     return;
