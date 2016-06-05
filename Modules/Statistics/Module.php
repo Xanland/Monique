@@ -130,7 +130,7 @@ class Statistics extends ModuleBase
 
     private function HandleChannelWithIngameChat (string $servername, string &$channel, string &$nickname, string &$message, string &$messageType, array $messageParts, string &$extra)
     {
-        if (strtolower ($channel) == '#lvp.echo' || strtolower ($channel) == '#xanland.logging')
+        if (strtolower ($channel) == '#lvp.echo' || strtolower ($channel) == '#overdosed' || strtolower ($channel) == '#xanland.logging')
         {
             if (in_array ($nickname, $this -> configuration ['NuwaniSistersEchoBots'])
                 && $this -> IsValidEchoLine ($servername, $messageParts, $messageType))
