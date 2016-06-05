@@ -71,7 +71,7 @@ class Merchant
         {
             self :: $m_aMerchantFileContent = array ();
         }
-        // var_dump (self :: $m_aMerchantFileContent);
+
         return self :: $m_aMerchantFileContent;
     }
 
