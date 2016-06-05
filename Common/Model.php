@@ -234,7 +234,13 @@ class Model
                     //                        $this->_sId = $sVarValue;
                 }
                 else
-                    var_dump ($oStmt->errorInfo());
+                {
+                    ob_start ();
+                    var_dump ($oStmt->errorInfo ());
+                    $varDump = ob_get_contents ();
+                    ob_end_clean ();
+                    file_put_contents ('error.log', $varDump, FILE_APPEND);
+                }
             }
             catch (\ PDOException $e)
             {
