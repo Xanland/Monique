@@ -63,19 +63,21 @@ class Statistics extends ModuleBase
         $message = Util :: stripFormat ($message);
         $messageParts = explode (' ', $message);
         $messageType = 'privmsg';
+        $extra = '';
 
-        $this -> HandleChannelWithIngameChat ('LVP', $channel, $nickname, $message, $messageType, $messageParts);
-        $this -> HandleChannelWithIngameChat ('OAS MC', $channel, $nickname, $message, $messageType, $messageParts);
+        $this -> HandleChannelWithIngameChat ('LVP', $channel, $nickname, $message, $messageType, $messageParts, $extra);
+        $this -> HandleChannelWithIngameChat ('OAS MC', $channel, $nickname, $message, $messageType, $messageParts, $extra);
 
-        if (!in_array ($channel, $this -> configuration ['Channels'])
-            || $messageType == 'nyi')
-            return; // Not a channel we need to log or not yet implemented messagetype
+        if (!in_array ($channel, $this -> configuration ['Channels']))
+            //|| $messageType == 'nyi')
+            return; // Not a channel we need to log //or not yet implemented messagetype
 
         $this -> logger -> CreateInstance ();
 
         $this -> logger -> SetDetails ($channel, $nickname);
         $this -> logger -> SetMessageType ($messageType);
         $this -> logger -> SetMessage ($message);
+        $this -> logger -> SetExtraInfo ($extra);
 
         $this -> logger -> SaveInstance ();
     }
@@ -97,7 +99,36 @@ class Statistics extends ModuleBase
         }
     }
 
-    private function HandleChannelWithIngameChat (string $servername, string &$channel, string &$nickname, string &$message, string &$messageType, array $messageParts)
+    public function onNotice (Bot $bot, string $channel, string $nickname, string $message)
+    {
+//        if ($bot ['Nickname'] != 'Monique')
+//            return;
+
+        if ($channel[0] == '+' || $channel[0] == '%' || $channel[0] == '@' || $channel[0] == '&'
+        || $channel[0] == '~')
+            $channel = substr ($channel, 1);;
+
+        $message = Util :: stripFormat ($message);
+        $messageParts = explode (' ', $message);
+        $messageType = 'worldmsg';
+        $extra = '';
+
+        $this -> HandleChannelWithIngameChat ('LVP', $channel, $nickname, $message, $messageType, $messageParts, $extra);
+
+        if (!in_array ($channel, $this -> configuration ['Channels']))
+            return; // Not a channel we need to log
+
+        $this -> logger -> CreateInstance ();
+
+        $this -> logger -> SetDetails ($channel, $nickname);
+        $this -> logger -> SetMessageType ($messageType);
+        $this -> logger -> SetMessage ($message);
+        $this -> logger -> SetExtraInfo ($extra);
+
+        $this -> logger -> SaveInstance ();
+    }
+
+    private function HandleChannelWithIngameChat (string $servername, string &$channel, string &$nickname, string &$message, string &$messageType, array $messageParts, string &$extra)
     {
         if (strtolower ($channel) == '#lvp.echo' || strtolower ($channel) == '#xanland.logging')
         {
@@ -107,6 +138,7 @@ class Statistics extends ModuleBase
                 $channel = $servername . ' In-game';
                 $nickname = $this -> GetNicknameFromValidEchoLine ($servername, $messageParts, $messageType);
                 $message = $this -> GetMessageFromValidEchoLine ($servername, $messageParts, $messageType);
+                $extra = $this -> GetExtraInfoFromValidEchoLine ($servername, $messageParts, $messageType);
             }
         }
     }
@@ -123,13 +155,24 @@ class Statistics extends ModuleBase
 
             if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false && strpos ($messageParts [1], '***') !== false)
             {
-                $messageType = 'nyi';
-                return true;
+                return false;
             }
 
             if (strpos ($messageParts [0], '[') !== false && strpos ($messageParts [0], ']') !== false)
             {
                 $messageType = 'action';
+                return true;
+            }
+
+            if (strpos ($messageParts [0], '***') !== false && strpos ($messageParts [1], 'Worldchat') !== false)
+            {
+                $messageType = 'worldmsg';
+                return true;
+            }
+
+            if (strpos ($messageParts [0], 'VIP') !== false && strpos ($messageParts [1], 'Chat') !== false)
+            {
+                $messageType = 'vipmsg';
                 return true;
             }
         }
@@ -165,6 +208,12 @@ class Statistics extends ModuleBase
 
                 return '';
             }
+
+            if ($messageType == 'worldmsg')
+                return str_replace (':', '', $messageParts [4]);
+
+            if ($messageType == 'vipmsg')
+                return str_replace (':', '', $messageParts [3]);
         }
         else if ($servername == 'OAS MC')
         {
@@ -188,6 +237,12 @@ class Statistics extends ModuleBase
         {
             if ($messageType == 'privmsg' || $messageType == 'action')
                 return Util :: getPieces ($messageParts, ' ', 2);
+
+            if ($messageType == 'worldmsg')
+                return Util :: getPieces ($messageParts, ' ', 5);
+
+            if ($messageType == 'vipmsg')
+                return Util :: getPieces ($messageParts, ' ', 4);
         }
         else if ($servername == 'OAS MC')
         {
@@ -196,6 +251,17 @@ class Statistics extends ModuleBase
 
             if ($messageType == 'action')
                 return Util :: getPieces ($messageParts, ' ', 1);
+        }
+
+        return '';
+    }
+
+    private function GetExtraInfoFromValidEchoLine (string $servername, array $messageParts, string $messageType)// : ?string
+    {
+        if ($servername == 'LVP')
+        {
+            if ($messageType == 'worldmsg')
+                return substr ($messageParts [2], 4, -1);
         }
 
         return '';

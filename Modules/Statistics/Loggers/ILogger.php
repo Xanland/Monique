@@ -34,9 +34,9 @@ interface ILogger
     public function CreateInstance ();
 
     public function SetDetails (string $channel, string $nick);
-
     public function SetMessageType (string $messageType);
     public function SetMessage (string $message);
+    public function SetExtraInfo (string $text);
 
     public function SaveInstance () : bool;
 }

@@ -58,6 +58,11 @@ class DatabaseLogger implements ILogger
         $this -> medium -> message = $message;
     }
 
+    public function SetExtraInfo (string $text)
+    {
+        $this -> medium -> extra_info = $text;
+    }
+
     public function SaveInstance () : bool
     {
         return $this -> medium -> save ();
