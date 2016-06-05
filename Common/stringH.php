@@ -46,7 +46,7 @@ class stringH
      *
      * @return bool If the string is empty or only contains spaces.
      */
-    public static function IsNullOrWhiteSpace ($stringToCheck = null) : \bool
+    public static function IsNullOrWhiteSpace ($stringToCheck = null) : bool
     {
         return self :: IsNullOrEmpty ($stringToCheck) || trim ($stringToCheck) === 0;
     }
