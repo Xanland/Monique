@@ -3,3 +3,5 @@
 config*
 Data/Logs
 Modules/Statistics/LVPDatabase.php
+.vsphpignore
+Monique*
