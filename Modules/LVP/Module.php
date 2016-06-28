@@ -30,10 +30,12 @@
 require_once 'LVPQueryApi.php';
 require_once 'NuwaniSisters.php';
 require_once 'Radio.php';
+require_once 'TempHistory.php';
 require_once 'InGame/Merchant.php';
 require_once 'InGame/QuoteDevice.php';
 require_once 'InGame/Seen.php';
 
+use LVP\TempHistory;
 use Nuwani\Bot;
 use Nuwani\Configuration;
 use Nuwani\ModuleManager;
@@ -65,57 +67,63 @@ class LVP extends \ModuleBase
      */
     public function __construct ()
     {
-        $moduleManager = ModuleManager :: getInstance () -> offsetGet ('Commands');
-        Seen :: addSeenCommand ($moduleManager);
-        NuwaniSisters :: addNuwaniSistersCommands ($moduleManager);
-        QuoteDevice :: addMqdCommands($moduleManager);
-        self :: add8ballCommand ($moduleManager);
+        $commandsModule = ModuleManager :: getInstance () -> offsetGet ('Commands');
+        Seen :: addSeenCommand ($commandsModule);
+        NuwaniSisters :: addNuwaniSistersCommands ($commandsModule);
+        QuoteDevice :: addMqdCommands($commandsModule);
+        self :: add8ballCommand ($commandsModule);
+        TempHistory :: addTempHistoryCommand ($commandsModule);
     }
 
     /**
      * Here we process each individual message if it matches the right user and
      * channel. If so we can send it to the specific module to process it.
      *
-     * @param  Bot    $pBot
-     * @param  string $sChannel
+     * @param  Bot          $pBot
+     * @param  string $channel
      * @param  string $sNickname
-     * @param  string $sMessage
+     * @param  string $message
      */
     public function onChannelPrivmsg (Bot $pBot, $sChannel, $sNickname, $sMessage)
     {
-        $sChannel = strtolower ($sChannel);
-        $sMessage = Util::stripFormat ($sMessage);
+        if ($sChannel[0] == '+' || $sChannel[0] == '%' || $sChannel[0] == '@' || $sChannel[0] == '&'
+            || $sChannel[0] == '~')
+            $channel = substr ($sChannel, 1);
 
-        if ($sChannel == self :: ECHO_CHANNEL || $sChannel == self :: LOGGING_CHANNEL)
+        $channel = strtolower ($sChannel);
+        $message = Util::stripFormat ($sMessage);
+
+        if ($channel == self :: ECHO_CHANNEL || $channel == self :: LOGGING_CHANNEL)
         {
             $pConfiguration = Configuration :: getInstance ();
             $aConfiguration = $pConfiguration -> get ('LVP');
 
             if (in_array ($sNickname, $aConfiguration['NuwaniSistersEchoBots']))
             {
-                if ($sMessage == '*** Global Gamemode Initialization')
+                if ($message == '*** Global Gamemode Initialization')
                 {
                     Seen:: resetOnlinePlayersAtGamemodeInit ();
                     Merchant:: resetInformation ();
                 }
                 else
                 {
-                    Seen:: setPersonInformation ($sMessage);
-                    Merchant:: setInformation ($sMessage);
+                    Seen:: setPersonInformation ($message);
+                    Merchant:: setInformation ($message);
+                    TempHistory :: messageHandler ($message);
                     if ($pBot['Nickname'] == 'Monique')
-                        QuoteDevice:: setInformation ($pBot, $sMessage);
+                        QuoteDevice:: setInformation ($pBot, $message);
                 }
             }
 
-            if ($sMessage == '!players')
+            if ($message == '!players')
             {
                 Seen:: syncOnlinePlayers ();
             }
         }
 
-        if ($sChannel == self :: RADIO_CHANNEL && $sNickname == 'LVP_Radio')
+        if ($channel == self :: RADIO_CHANNEL && $sNickname == 'LVP_Radio')
         {
-            Radio :: setNowPlayingInformation ($sMessage);
+            Radio :: setNowPlayingInformation ($message);
         }
     }
 
