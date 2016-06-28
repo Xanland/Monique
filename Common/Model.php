@@ -115,7 +115,8 @@ class Model
     {
         $sQuery = "select *
                    from " . $this->_sTable . "
-                   where " . $this->_sTable . "." . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin;";
+                   where " . $this->_sTable . "." . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin
+                   limit 1;";
         //echo str_replace (':sId', $this -> _sId, $sQuery);
 
         try
@@ -320,16 +321,16 @@ class Model
      *
      * @return array Model
      */
-    public function getAll ()
+    public function getAll (string $orderBy = null)
     {
         $aModels = array ();
 
         $sQuery = "select *
                    from " . $this->_sTable . " ";
         if (isset($this->_sId))
-        {
-            $sQuery .= "where " . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin";
-        }
+            $sQuery .= "where " . $this->_sIdColumn . " like CONVERT(:sId USING utf8) COLLATE utf8_bin ";
+        if (isset ($orderBy) && !is_null ($orderBy) && strlen ($orderBy) > 1)
+            $sQuery .= "order by " . $orderBy;
         $sQuery .= ";";
 
         try
