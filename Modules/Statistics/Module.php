@@ -57,8 +57,8 @@ class Statistics extends ModuleBase
 
     public function onChannelPrivmsg (Bot $bot, string $channel, string $nickname, string $message)
     {
-        if ($bot ['Nickname'] != 'Monique')
-            return;
+//        if ($bot ['Nickname'] != 'Monique')
+//            return;
 
         $message = Util :: stripFormat ($message);
         $messageParts = explode (' ', $message);

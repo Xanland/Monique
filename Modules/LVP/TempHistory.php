@@ -43,7 +43,7 @@ class TempHistory
         $commandsModule -> registerCommand (new Command ('temphistory',
             function ($bot, $destination, $channel, $nickname, $params, $message)
             {
-                if (strtolower ($channel) != '#lvp.crew')
+                if (strtolower ($channel) != '#lvp.crew' && strtolower ($channel) != '#xanland.logging')
                     return;
 
                 if (count ($params) < 1 || count ($params) > 2)
@@ -56,7 +56,7 @@ class TempHistory
 
                 $lvpTemphistorySingle = new Model ('lvp_temphistory', 'temped_player', $tempedPlayer);
                 $lvpTemphistoryArray = $lvpTemphistorySingle -> getAll ('start_timestamp desc');
-                $amountOfTempRows     = count ($lvpTemphistoryArray);
+                $amountOfTempRows = count ($lvpTemphistoryArray);
                 if ($amountOfTempRows == 0)
                 {
                     echo stringH :: Format ('{0}*** No items found for player {1}.', ModuleBase::COLOUR_RED, $tempedPlayer);
@@ -79,11 +79,19 @@ class TempHistory
                 {
                     $startTimestamp = $lvpTemphistory -> start_timestamp;
                     $endTimestamp  = $lvpTemphistory -> end_timestamp;
-                    echo stringH::Format('{0}[{1}] {2}(Granted by: {3}, taken by: {4}){5}: {6} - {7} {8}({9}){10}',
+                    $takenByOrIngame = 'taken by: ' . $lvpTemphistory -> temp_taken_by;
+
+                    if (is_null ($lvpTemphistory -> temp_taken_by) && is_null($endTimestamp))
+                    {
+                        $takenByOrIngame = 'currently in-game';
+                        $endTimestamp = 'now';
+                    }
+
+                    echo stringH::Format('{0}[{1}] {2}(Granted by: {3}, {4}){5}: {6} - {7} {8}({9}){10}',
                         ModuleBase :: COLOUR_RED, date ('d-m-Y', $startTimestamp), // 0, 1
-                        ModuleBase :: COLOUR_DARKGREEN, $lvpTemphistory -> temp_granted_by, $lvpTemphistory -> temp_taken_by, // 2, 3, 4
-                        ModuleBase :: CLEAR, date ('H:i:s', $startTimestamp), date ('H:i:s', $endTimestamp), // 5, 6, 7
-                        ModuleBase :: COLOUR_GREY, Util :: formatTime($endTimestamp - $startTimestamp, true), PHP_EOL); // 8, 9, 10
+                        ModuleBase :: COLOUR_DARKGREEN, $lvpTemphistory -> temp_granted_by, $takenByOrIngame, // 2, 3, 4
+                        ModuleBase :: CLEAR, date ('H:i:s', $startTimestamp), ($endTimestamp == 'now' ? 'now' : date ('H:i:s', $endTimestamp)), // 5, 6, 7
+                        ModuleBase :: COLOUR_GREY, Util :: formatTime(($endTimestamp == 'now' ? strtotime($endTimestamp) : $endTimestamp) - $startTimestamp, true), PHP_EOL); // 8, 9, 10
 
                     if($i++ == $items-1)
                         break;
